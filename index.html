@@ -408,7 +408,8 @@
   .row-item.danger{ color:var(--danger); }
 </style>
 <style>
-#thSplash{position:fixed;inset:0;z-index:2147483000;background:#F1ECE3;display:flex;align-items:center;justify-content:center;animation:thSplashOut .45s ease 1.4s forwards;}
+#thSplash{position:fixed;inset:0;z-index:2147483000;background:#F1ECE3;display:flex;align-items:center;justify-content:center;transition:opacity .45s ease;}
+#thSplash.done{opacity:0;visibility:hidden;pointer-events:none;}
 #thSplash img{width:168px;height:168px;border-radius:38px;box-shadow:0 10px 28px rgba(43,38,34,.18);animation:thSplashIn .6s ease both;}
 @keyframes thSplashIn{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
 @keyframes thSplashOut{to{opacity:0;visibility:hidden;pointer-events:none;}}
@@ -1650,9 +1651,22 @@ async function enterAppIfSessionValid(){
   showAppTab('home');
 }
 
+/* Splash stays up until the first login check finishes, so a signed-in tailor never sees the login page flash first */
+const SPLASH_T0 = Date.now();
+function hideSplash(){
+  const el = document.getElementById('thSplash');
+  if(el) el.classList.add('done');
+}
+function hideSplashSoon(){
+  const wait = Math.max(0, 1200 - (Date.now() - SPLASH_T0));
+  setTimeout(hideSplash, wait);
+}
+setTimeout(hideSplash, 8000); /* safety: never leave the splash stuck */
+
 auth.onAuthStateChanged(async (user) => {
   if(user){
-    await enterAppIfSessionValid();
+    document.querySelectorAll('.auth-screen').forEach(s => s.classList.add('hidden'));
+    try{ await enterAppIfSessionValid(); }finally{ hideSplashSoon(); }
   } else {
     if(ownDeviceUnsub){ ownDeviceUnsub(); ownDeviceUnsub = null; }
     if(deviceListUnsub){ deviceListUnsub(); deviceListUnsub = null; }
@@ -1666,6 +1680,7 @@ auth.onAuthStateChanged(async (user) => {
       localStorage.removeItem('th_dbg');
       if(why !== 'manual') setTimeout(()=>showGlobalToast('[b3] ' + why), 600);
     }catch(e){}
+    hideSplashSoon();
   }
 });
 
