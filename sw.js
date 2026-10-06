@@ -1,5 +1,5 @@
 /* TailorHub service worker - offline support. Bump VERSION when you want to force a cache refresh. */
-const VERSION = 'th-v6';
+const VERSION = 'th-v7';
 const CORE = 'th-core-' + VERSION;
 const LIBS = 'th-libs-' + VERSION;
 
@@ -46,7 +46,7 @@ self.addEventListener('fetch', e => {
         c.put('./', fresh.clone());
         return fresh;
       } catch (err) {
-        return (await caches.match('./')) || Response.error();
+        return (await caches.match('./', { ignoreSearch: true })) || (await caches.match('index.html', { ignoreSearch: true })) || Response.error();
       }
     })());
     return;
