@@ -1352,7 +1352,6 @@ function listenOwnDevice(uid){
       if(!snap.exists && auth.currentUser){
         const lang = currentLang();
         showGlobalToast(lang === 'ur' ? 'یہ ڈیوائس دور سے لاگ آؤٹ کر دی گئی ہے۔' : lang === 'ru' ? 'Ye device door se logout kar di gayi hai.' : 'This device was logged out remotely.');
-        try{ localStorage.setItem('th_dbg','remote-signout '+new Date().toISOString().slice(11,19)); }catch(e){}
         auth.signOut();
       }
     });
@@ -1386,7 +1385,7 @@ function renderDeviceList(uid){
         btn.addEventListener('click', async () => {
           if(!(await customConfirm(T('msg_confirmLogoutDevice'), T('btn_deleteConfirmOk'), T('btn_cancel'), true))) return;
           await db.collection('users').doc(uid).collection('devices').doc(doc.id).delete();
-          if(isThis){ try{ localStorage.setItem('th_dbg','manual'); }catch(e){} await auth.signOut(); }
+          if(isThis){ await auth.signOut(); }
         });
         row.appendChild(btn);
         wrap.appendChild(row);
@@ -4313,7 +4312,6 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     if(user){
       try{ await db.collection('users').doc(user.uid).collection('devices').doc(DEVICE_ID).delete(); }catch(e){}
     }
-    try{ localStorage.setItem('th_dbg','manual'); }catch(e){}
     await auth.signOut();
   });
 
