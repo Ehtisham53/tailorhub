@@ -1337,6 +1337,10 @@ function listenOwnDevice(uid){
   if(ownDeviceUnsub) ownDeviceUnsub();
   ownDeviceUnsub = db.collection('users').doc(uid).collection('devices').doc(DEVICE_ID)
     .onSnapshot(snap => {
+      /* ignore cache-only snapshots: on a cold start the local cache can say
+         "missing" before the server has answered, which wrongly logged the
+         tailor out every time the app was reopened */
+      if(snap.metadata && snap.metadata.fromCache) return;
       if(!snap.exists && auth.currentUser){
         const lang = currentLang();
         showGlobalToast(lang === 'ur' ? 'یہ ڈیوائس دور سے لاگ آؤٹ کر دی گئی ہے۔' : lang === 'ru' ? 'Ye device door se logout kar di gayi hai.' : 'This device was logged out remotely.');
@@ -1623,7 +1627,9 @@ document.getElementById('btn_forceClearDevices').addEventListener('click', async
 async function enterAppIfSessionValid(){
   const user = auth.currentUser;
   if(!user) return;
-  const reg = await tryRegisterDevice(user.uid);
+  let reg;
+  try{ reg = await tryRegisterDevice(user.uid); }
+  catch(e){ console.warn('device check failed (offline?), letting signed-in user in:', e); reg = { ok: true }; }
   if(!reg.ok){
     pendingBlockedUser = user;
     showAuthScreen('auth-deviceBlock');
