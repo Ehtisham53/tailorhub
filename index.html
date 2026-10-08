@@ -112,10 +112,10 @@
   .status-Complete{background:#DCEBD9; color:#3A6B3F;}
   .status-Delivered{background:#E6E1D8; color:var(--ink-soft);}
 
-  .status-tab-row{ display:flex; gap:6px; padding:12px 16px 0; overflow-x:auto; background:var(--surface); border-bottom:1px solid var(--line); }
-  .status-tab{ flex:1; min-width:78px; border:1px solid var(--line); border-radius:20px; background:var(--surface); color:var(--ink-soft); font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600; padding:8px 6px; white-space:nowrap; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:4px; }
+  .status-tab-row{ display:flex; gap:4px; padding:12px 10px 0; overflow-x:auto; background:var(--surface); border-bottom:1px solid var(--line); }
+  .status-tab{ flex:1 1 0; min-width:0; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink-soft); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:7px 2px; white-space:normal; text-align:center; line-height:1.15; margin-bottom:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
   .status-tab.active{ background:var(--thread); border-color:var(--thread); color:#fff; }
-  .status-tab-count{ font-weight:700; opacity:.8; }
+  .status-tab-count{ font-weight:700; font-size:13px; opacity:.9; }
   .invoice-tag{ font-size:11px; color:var(--brass); font-weight:700; }
 
   .invoice-head{ text-align:center; padding:10px 0 18px; border-bottom:2px dashed var(--line); margin-bottom:16px; }
@@ -775,6 +775,7 @@
       <h1 data-i18n="or_title">Orders</h1>
     </div>
     <div class="status-tab-row" id="or_statusTabs">
+      <button class="status-tab" data-status="All"><span data-i18n="st_all">All</span> <span class="status-tab-count" id="or_count_All">0</span></button>
       <button class="status-tab" data-status="Pending"><span data-i18n="st_pending">Pending</span> <span class="status-tab-count" id="or_count_Pending">0</span></button>
       <button class="status-tab" data-status="InProgress"><span data-i18n="st_inProgress">In Progress</span> <span class="status-tab-count" id="or_count_InProgress">0</span></button>
       <button class="status-tab" data-status="Complete"><span data-i18n="st_complete">Complete</span> <span class="status-tab-count" id="or_count_Complete">0</span></button>
@@ -2162,7 +2163,7 @@ const APP_STR = {
     or_title:"Orders", btn_showDelivered:"Show Delivered", btn_hideDelivered:"Hide Delivered", or_search:"Search by customer name or serial no.",
     lbl_customer:"Customer", ph_tapCustomer:"Tap to select a customer",
     lbl_fabricType:"Fabric Type", lbl_fabricColor:"Fabric Color", clr_title:"Select Fabric Colors", clr_done:"Done", clr_clear:"Clear", lbl_suitQty:"Suit Quantity", lbl_orderDate:"Order Date", lbl_deliveryDate:"Delivery Date",
-    lbl_status:"Status", st_pending:"Pending", st_inProgress:"In Progress", st_complete:"Complete", st_delivered:"Delivered",
+    lbl_status:"Status", st_all:"All", st_pending:"Pending", st_inProgress:"In Progress", st_complete:"Complete", st_delivered:"Delivered",
     sec_payment:"Payment", lbl_totalAmount:"Total Amount", lbl_advancePaid:"Advance Paid", lbl_remainingBalance:"Remaining Balance",
     btn_markBalanceReceived:"✓ Mark Remaining as Received", txt_balanceReceivedOn:"Remaining {amt} received on {date} (tap to undo)",
     sec_whatsapp:"WhatsApp", btn_sendWa:"Send WhatsApp Message", btn_saveOrder:"Save Order",
@@ -2195,7 +2196,7 @@ const APP_STR = {
     msg_capacityWarning:"{n} suit(s) are already due for delivery on this date. This order would take the total to {t}, above your set capacity of {c}.",
     msg_pinLimitReached:"Free plan allows pinning up to 5 customers. Upgrade to Premium for unlimited pins.",
     msg_pdfLibFail:"PDF library did not load - check internet connection and try again.",
-    msg_pdfGenFail:"PDF generation failed: ",
+    msg_pdfGenFail:"PDF generation failed: ", msg_pdfOpenFail:"Could not open or download the PDF automatically. Please allow pop-ups/downloads and try again.",
     lbl_noName:"(no name)", lbl_customerDeleted:"(customer deleted)", lbl_customerDefault:"Customer",
     up_title:"Choose a Plan", up_cancel:"Cancel", up_perMonth:"/month", up_permonthApprox:"≈ {x} / month", up_devicesCount:"{x} devices", st_devCount:"{x} of {y} devices in use",
     up_featuresTitle:"What's included in Premium",
@@ -2246,7 +2247,7 @@ const APP_STR = {
     or_title:"آرڈرز", btn_showDelivered:"ڈیلیورڈ دکھائیں", btn_hideDelivered:"ڈیلیورڈ چھپائیں", or_search:"کسٹمر کے نام یا سیریل نمبر سے تلاش کریں",
     lbl_customer:"کسٹمر", ph_tapCustomer:"کسٹمر منتخب کرنے کے لیے تھپتھپائیں",
     lbl_fabricType:"کپڑے کی قسم", lbl_fabricColor:"کپڑے کا رنگ", clr_title:"کپڑے کے رنگ چنیں", clr_done:"مکمل", clr_clear:"صاف کریں", lbl_suitQty:"سوٹس کی تعداد", lbl_orderDate:"آرڈر کی تاریخ", lbl_deliveryDate:"ڈیلیوری کی تاریخ",
-    lbl_status:"صورتحال", st_pending:"زیر التوا", st_inProgress:"جاری ہے", st_complete:"مکمل", st_delivered:"ڈیلیورڈ",
+    lbl_status:"صورتحال", st_all:"تمام", st_pending:"زیر التوا", st_inProgress:"جاری ہے", st_complete:"مکمل", st_delivered:"ڈیلیورڈ",
     sec_payment:"ادائیگی", lbl_totalAmount:"کل رقم", lbl_advancePaid:"ایڈوانس ادا شدہ", lbl_remainingBalance:"باقی رقم",
     btn_markBalanceReceived:"✓ باقی رقم موصول ہو گئی", txt_balanceReceivedOn:"باقی {amt} {date} کو موصول ہوئی (واپس لینے کے لیے دبائیں)",
     sec_whatsapp:"واٹس ایپ", btn_sendWa:"واٹس ایپ پیغام بھیجیں", btn_saveOrder:"آرڈر محفوظ کریں",
@@ -2254,22 +2255,22 @@ const APP_STR = {
     mode_view:"ملاحظہ", mode_editing:"ترمیم جاری",
     title_newEntry:"نئی انٹری", title_editEntry:"انٹری میں ترمیم", title_newOrder:"نیا آرڈر", title_editOrder:"آرڈر میں ترمیم", title_invoice:"انوائس",
     btn_done:"مکمل",
-    empty_homeTitle:"ابھی تک کوئی پیمائش نہیں", empty_homeSub:"Measurement ٹیب سے محفوظ کی گئی انٹریاں یہاں نظر آئیں گی۔",
+    empty_homeTitle:"ابھی تک کوئی پیمائش نہیں", empty_homeSub:"پیمائش ٹیب سے محفوظ کی گئی انٹریاں یہاں نظر آئیں گی۔",
     empty_measurementTitle:"ابھی تک کوئی پیمائش نہیں", empty_measurementSub:"پہلے کسٹمر کی پیمائش شامل کرنے کے لیے + بٹن دبائیں۔",
     empty_orderTitle:"ابھی تک کوئی آرڈر نہیں", empty_orderSub:"محفوظ کسٹمر کے لیے آرڈر بنانے کے لیے + بٹن دبائیں۔",
     meta_qty:"مقدار", meta_saved:"محفوظ شدہ", meta_overdue:"تاخیر شدہ", meta_delivery:"ڈیلیوری",
     wa_orderReady:"آرڈر تیار ہے",
-    msg_selectCustomerFirst:"پہلے کسٹمر منتخب کریں۔", msg_noPhoneSaved:"اس کسٹمر کا فون نمبر محفوظ نہیں ہے۔ پہلے Customer یا Measurement سے شامل کریں۔",
+    msg_selectCustomerFirst:"پہلے کسٹمر منتخب کریں۔", msg_noPhoneSaved:"اس کسٹمر کا فون نمبر محفوظ نہیں ہے۔ پہلے کسٹمر یا پیمائش ٹیب سے شامل کریں۔",
     msg_confirmDeleteMeasurement:"کیا آپ واقعی یہ پیمائش حذف کرنا چاہتے ہیں؟ یہ واپس نہیں ہو سکتا۔",
     msg_confirmDeleteOrder:"کیا آپ واقعی یہ آرڈر حذف کرنا چاہتے ہیں؟ یہ واپس نہیں ہو سکتا۔",
     msg_confirmLogoutDevice:"کیا آپ واقعی اس ڈیوائس کو لاگ آؤٹ کرنا چاہتے ہیں؟",
     btn_cancel:"منسوخ کریں", btn_deleteConfirmOk:"حذف کریں",
     msg_templateNotSet:"(پیغام ابھی سیٹ نہیں ہوا — پروفائل میں شامل کریں)",
     msg_pleaseSelectCustomer:"براہ کرم اس آرڈر کے لیے کسٹمر منتخب کریں۔",
-    msg_noSavedMatch:"کوئی محفوظ پیمائش مماثل نہیں۔ پہلے Measurement ٹیب سے ایک شامل کریں۔",
+    msg_noSavedMatch:"کوئی محفوظ پیمائش مماثل نہیں۔ پہلے پیمائش ٹیب سے ایک شامل کریں۔",
     badge_premium:"پریمیم",
-    msg_measLimit:"فری پلان میں کل 100 measurements کی اجازت ہے۔ لامحدود measurements کے لیے پریمیم میں اپ گریڈ کریں۔",
-    msg_orderLimit:"فری پلان میں کل 100 orders کی اجازت ہے۔ لامحدود orders کے لیے پریمیم میں اپ گریڈ کریں۔",
+    msg_measLimit:"فری پلان میں کل 100 پیمائشوں کی اجازت ہے۔ لامحدود پیمائشوں کے لیے پریمیم میں اپ گریڈ کریں۔",
+    msg_orderLimit:"فری پلان میں کل 100 آرڈرز کی اجازت ہے۔ لامحدود آرڈرز کے لیے پریمیم میں اپ گریڈ کریں۔",
     msg_premiumOnlyPayment:"پیمنٹ ٹریکنگ ایک پریمیم فیچر ہے۔ استعمال کرنے کے لیے پریمیم میں اپ گریڈ کریں۔",
     msg_premiumOnlyCapacity:"روزانہ سوٹ کیپیسٹی ایک پریمیم فیچر ہے۔ سیٹ کرنے کے لیے پریمیم میں اپ گریڈ کریں۔",
     msg_premiumOnlyExport:"ڈیٹا ایکسپورٹ ایک پریمیم فیچر ہے۔ اپنا ڈیٹا ایکسپورٹ کرنے کے لیے پریمیم میں اپ گریڈ کریں۔",
@@ -2279,7 +2280,7 @@ const APP_STR = {
     msg_capacityWarning:"اس تاریخ پر پہلے ہی {n} سوٹ ڈیلیوری کے لیے موجود ہیں۔ یہ آرڈر شامل کرنے سے کل تعداد {t} ہو جائے گی، جو آپ کی مقرر کردہ کیپیسٹی {c} سے زیادہ ہے۔",
     msg_pinLimitReached:"فری پلان میں صرف 5 کسٹمرز پن کیے جا سکتے ہیں۔ ان لمیٹڈ پن کے لیے پریمیم میں اپ گریڈ کریں۔",
     msg_pdfLibFail:"پی ڈی ایف لائبریری لوڈ نہیں ہوئی — انٹرنیٹ کنکشن چیک کریں اور دوبارہ کوشش کریں۔",
-    msg_pdfGenFail:"پی ڈی ایف بنانے میں ناکامی: ",
+    msg_pdfGenFail:"پی ڈی ایف بنانے میں ناکامی: ", msg_pdfOpenFail:"PDF خود بخود نہیں کھل سکی یا ڈاؤن لوڈ نہیں ہو سکی۔ براہ کرم پاپ اپ/ڈاؤن لوڈ کی اجازت دے کر دوبارہ کوشش کریں۔",
     lbl_noName:"(نام درج نہیں)", lbl_customerDeleted:"(کسٹمر حذف شدہ)", lbl_customerDefault:"کسٹمر",
     up_title:"پلان منتخب کریں", up_cancel:"منسوخ کریں", up_perMonth:"/ماہ", up_permonthApprox:"≈ {x} / ماہ", up_devicesCount:"{x} ڈیوائسز", st_devCount:"{y} میں سے {x} ڈیوائسز استعمال میں ہیں",
     up_featuresTitle:"پریمیم میں کیا شامل ہے",
@@ -2330,7 +2331,7 @@ const APP_STR = {
     or_title:"Orders", btn_showDelivered:"Delivered Dikhayein", btn_hideDelivered:"Delivered Chupayein", or_search:"Customer ke naam ya serial no. se search karein",
     lbl_customer:"Customer", ph_tapCustomer:"Customer select karne ke liye tap karein",
     lbl_fabricType:"Kapre ki Qisam", lbl_fabricColor:"Kapre ka Rang", clr_title:"Kapre ke Rang Chunein", clr_done:"Mukammal", clr_clear:"Saaf Karein", lbl_suitQty:"Suit Quantity", lbl_orderDate:"Order ki Tareekh", lbl_deliveryDate:"Delivery ki Tareekh",
-    lbl_status:"Status", st_pending:"Pending", st_inProgress:"Jaari Hai", st_complete:"Mukammal", st_delivered:"Delivered",
+    lbl_status:"Status", st_all:"Sab", st_pending:"Pending", st_inProgress:"Jaari Hai", st_complete:"Mukammal", st_delivered:"Delivered",
     sec_payment:"Payment", lbl_totalAmount:"Kul Raqam", lbl_advancePaid:"Advance Ada Shuda", lbl_remainingBalance:"Baqi Raqam",
     btn_markBalanceReceived:"✓ Baqi Raqam Mil Gayi Mark Karein", txt_balanceReceivedOn:"Baqi {amt} {date} ko mil gayi (undo karne k liye tap karein)",
     sec_whatsapp:"WhatsApp", btn_sendWa:"WhatsApp Message Bhejein", btn_saveOrder:"Order Save Karein",
@@ -2363,7 +2364,7 @@ const APP_STR = {
     msg_capacityWarning:"Is date par pehle hi {n} suit(s) delivery ke liye due hain. Ye order add karne se total {t} ho jayega, jo aap ki set ki hui capacity {c} se zyada hai.",
     msg_pinLimitReached:"Free plan mein sirf 5 customers pin ho sakte hain. Unlimited pins ke liye Premium mein upgrade karein.",
     msg_pdfLibFail:"PDF library load nahi hui - internet connection check karke dobara koshish karein.",
-    msg_pdfGenFail:"PDF banane mein nakami: ",
+    msg_pdfGenFail:"PDF banane mein nakami: ", msg_pdfOpenFail:"PDF khud nahi khul saki ya download nahi hui. Pop-up/download ki ijazat de kar dobara koshish karein.",
     lbl_noName:"(naam darj nahi)", lbl_customerDeleted:"(customer delete ho chuka)", lbl_customerDefault:"Customer",
     up_title:"Plan Chunein", up_cancel:"Cancel", up_perMonth:"/month", up_permonthApprox:"≈ {x} / month", up_devicesCount:"{x} devices", st_devCount:"{y} mein se {x} devices istemal mein hain",
     up_featuresTitle:"Premium mein kya shamil hai",
@@ -2725,7 +2726,7 @@ function forceSaveDoc(doc, fileName){
     const blob = doc.output('blob');
     const blobUrl = URL.createObjectURL(blob);
     const opened = window.open(blobUrl, '_blank');
-    if(!opened) throw new Error('Could not open or download the PDF automatically. Please allow pop-ups/downloads and try again.');
+    if(!opened) throw new Error(T('msg_pdfOpenFail'));
   }
 }
 
@@ -3359,7 +3360,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
   let orders = loadOrders();
   let editingId = null;
   let activeStatus = 'Pending';
-  const searchQueries = { Pending:'', InProgress:'', Complete:'', Delivered:'' };
+  const searchQueries = { All:'', Pending:'', InProgress:'', Complete:'', Delivered:'' };
   let selectedCustomerId = null;
   let invoiceOrderId = null;
   let pendingPhotoFile = null;   // newly picked file, not yet uploaded (uploads only on Save)
@@ -3403,9 +3404,9 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
   function findCustomer(id){ return loadMeasurements().find(m => m.id === id); }
 
   function updateTabCounts(){
-    ['Pending','InProgress','Complete','Delivered'].forEach(s=>{
+    ['All','Pending','InProgress','Complete','Delivered'].forEach(s=>{
       const el = document.getElementById('or_count_'+s);
-      if(el) el.textContent = orders.filter(o => o.status === s).length;
+      if(el) el.textContent = s === 'All' ? orders.length : orders.filter(o => o.status === s).length;
     });
     statusTabs.querySelectorAll('.status-tab').forEach(btn=>{
       btn.classList.toggle('active', btn.dataset.status === activeStatus);
@@ -3417,7 +3418,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     const q = searchQueries[activeStatus].trim().toLowerCase();
     const measurements = loadMeasurements();
     let filtered = orders.filter(o => {
-      if(o.status !== activeStatus) return false;
+      if(activeStatus !== 'All' && o.status !== activeStatus) return false;
       const cust = measurements.find(m => m.id === o.customerId);
       const name = cust ? cust.name.toLowerCase() : '';
       const sr = cust ? pad(cust.sr) : '';
@@ -3442,6 +3443,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
           <div class="meta ${overdue ? 'overdue-text' : ''}">${overdue ? T('meta_overdue') + ' • ' : ''}${T('meta_delivery')}: ${fmtDate(o.deliveryDate)}</div>
           <div class="invoice-tag">${o.invoiceNo ? fmtInvoiceNo(o.invoiceNo) : ''}</div>
         </div>
+        ${activeStatus === 'All' ? `<span class="status-badge status-${o.status}">${statusLabel(o.status)}</span>` : ''}
         <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
       </div>`;
     }).join('');
@@ -3918,12 +3920,12 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       st_updatePw:"Update Password", st_pwUpdated:"Password updated successfully", st_pwMismatch:"New password and confirmation do not match.",
       st_pwShort:"New password must be at least 6 characters.", st_pwHint:"At least 6 characters, letters and numbers together.", st_pwRule:"Password must contain both letters and numbers.", st_pwWrongCurrent:"Current password is incorrect.", st_pwFillAll:"Please fill in all password fields.",
       st_devices:"Logged-in Devices", st_hdevices:"Log out a device below if you need to sign in on a new one.",
-      st_logout:"Log Out (this device)", st_version:"App Version", st_backup:"Data Backup", st_delete:"Delete Account",
+      st_logout:"Log Out (this device)", st_version:"App Version", st_backup:"Data Backup", st_backupVal:"Cloud (Firebase)", st_delete:"Delete Account",
       st_logoutConfirm:"Are you sure you want to log out?",
       st_deleteConfirm:"This will permanently delete your account and all your data (measurements, orders, payments, profile). This cannot be undone. Continue?",
       st_deleteConfirm2:"Are you absolutely sure? This is your last chance to cancel.", inc_title:"Income Summary", inc_hint:"Based on payments recorded against each order's Order Date.", inc_collToday:"Collected Today", inc_billToday:"Billed Today", inc_collMonth:"Collected This Month", inc_billMonth:"Billed This Month", inc_bookToday:"Booked Today", inc_delivToday:"Delivered Today", inc_bookMonth:"Booked This Month", inc_delivMonth:"Delivered This Month", inc_monthly:"Monthly Record", mr_title:"Monthly Record", mr_close:"Close", mr_empty:"No orders yet. Your monthly record will appear here.", mr_booked:"Booked", mr_delivered:"Delivered", suit1:"suit", suitN:"suits", cap_title:"Daily Suit Capacity", cap_hint:"Set how many suits you can realistically deliver in one day. You'll get a heads-up if a new order's delivery date already has too many suits due.", cap_save:"Save Capacity", cap_ph:"", exp_title:"Export Data", exp_hint:"Download a copy of your data as a spreadsheet file — handy for sharing with an accountant.", exp_meas:"Export Measurements (CSV)", exp_orders:"Export Orders (CSV)", use_meas:"Measurements Used", use_orders:"Orders Used" },
     ur:{ title:"پروفائل", shopinfo:"دکان کی معلومات", shopname:"دکان کا نام", tailorname:"درزی کا نام", ownPhone:"فون نمبر", hownPhone:"پیمائش یا آرڈر شامل کرنے سے پہلے دکان کا نام، درزی کا نام اور فون نمبر — تینوں پُر کرنا ضروری ہے۔",
-      unit:"پیمائش کی اکائی", hunit:"یہ کبھی بھی تبدیل ہو سکتا ہے — Measurement ٹیب یہی بطور ڈیفالٹ استعمال کرے گا۔",
+      unit:"پیمائش کی اکائی", hunit:"یہ کبھی بھی تبدیل ہو سکتا ہے — پیمائش ٹیب یہی بطور ڈیفالٹ استعمال کرے گا۔",
       lang:"ایپ کی زبان", hlang:"یہ پوری ایپ پر لاگو ہوتا ہے — کسٹمر، پیمائش اور آرڈرز میں بھی۔",
       wa:"واٹس ایپ میسج", t1:"آرڈر تیار ہے کا پیغام",
       ph1:"",
@@ -3937,7 +3939,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       st_updatePw:"پاس ورڈ اپ ڈیٹ کریں", st_pwUpdated:"پاس ورڈ کامیابی سے اپ ڈیٹ ہو گیا", st_pwMismatch:"نیا پاس ورڈ اور تصدیق مماثل نہیں ہیں۔",
       st_pwShort:"نیا پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے۔", st_pwHint:"کم از کم 6 حروف، حروف اور ہندسے ملا کر۔", st_pwRule:"پاس ورڈ میں حروف اور ہندسے دونوں ہونے چاہییں۔", st_pwWrongCurrent:"موجودہ پاس ورڈ غلط ہے۔", st_pwFillAll:"براہ کرم تمام پاس ورڈ فیلڈز پُر کریں۔",
       st_devices:"لاگ ان ڈیوائسز", st_hdevices:"اگر کسی نئی ڈیوائس پر لاگ ان کرنا ہو تو نیچے سے کوئی ڈیوائس لاگ آؤٹ کریں۔",
-      st_logout:"لاگ آؤٹ (اس ڈیوائس سے)", st_version:"ایپ ورژن", st_backup:"ڈیٹا بیک اپ", st_delete:"اکاؤنٹ حذف کریں",
+      st_logout:"لاگ آؤٹ (اس ڈیوائس سے)", st_version:"ایپ ورژن", st_backup:"ڈیٹا بیک اپ", st_backupVal:"کلاؤڈ (Firebase)", st_delete:"اکاؤنٹ حذف کریں",
       st_logoutConfirm:"کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟",
       st_deleteConfirm:"یہ آپ کا اکاؤنٹ اور تمام ڈیٹا (پیمائشیں، آرڈرز، ادائیگیاں، پروفائل) مستقل طور پر حذف کر دے گا۔ اسے واپس نہیں کیا جا سکتا۔ جاری رکھیں؟",
       st_deleteConfirm2:"کیا آپ کو مکمل یقین ہے؟ منسوخ کرنے کا یہ آخری موقع ہے۔", inc_title:"آمدنی کا خلاصہ", inc_hint:"ہر آرڈر کی آرڈر تاریخ کے مطابق درج ادائیگیوں پر مبنی۔", inc_collToday:"آج وصول", inc_billToday:"آج کا بل", inc_collMonth:"اس ماہ وصول", inc_billMonth:"اس ماہ کا بل", inc_bookToday:"آج بک ہوئے", inc_delivToday:"آج ڈیلیور ہوئے", inc_bookMonth:"اس ماہ بک ہوئے", inc_delivMonth:"اس ماہ ڈیلیور ہوئے", inc_monthly:"ماہانہ ریکارڈ", mr_title:"ماہانہ ریکارڈ", mr_close:"بند کریں", mr_empty:"ابھی کوئی آرڈر نہیں۔ آپ کا ماہانہ ریکارڈ یہاں نظر آئے گا۔", mr_booked:"بک", mr_delivered:"ڈیلیور", suit1:"سوٹ", suitN:"سوٹ", cap_title:"روزانہ سوٹ کی گنجائش", cap_hint:"بتائیں کہ آپ ایک دن میں حقیقت پسندانہ طور پر کتنے سوٹ ڈیلیور کر سکتے ہیں۔ اگر کسی نئے آرڈر کی ڈیلیوری تاریخ پر پہلے ہی بہت زیادہ سوٹ واجب الادا ہوں تو آپ کو خبردار کیا جائے گا۔", cap_save:"گنجائش محفوظ کریں", cap_ph:"", exp_title:"ڈیٹا ایکسپورٹ", exp_hint:"اپنے ڈیٹا کی کاپی اسپریڈشیٹ فائل کی شکل میں ڈاؤن لوڈ کریں — اکاؤنٹنٹ کو بھیجنے کے لیے مفید۔", exp_meas:"پیمائشیں ایکسپورٹ کریں (CSV)", exp_orders:"آرڈرز ایکسپورٹ کریں (CSV)", use_meas:"استعمال شدہ پیمائشیں", use_orders:"استعمال شدہ آرڈرز" },
@@ -3956,7 +3958,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       st_updatePw:"Password Update Karein", st_pwUpdated:"Password kamyabi se update ho gaya", st_pwMismatch:"New password aur confirmation match nahi karte.",
       st_pwShort:"New password kam az kam 6 characters ka hona chahiye.", st_pwHint:"Kam az kam 6 huroof, harf aur number mila kar.", st_pwRule:"Password mein harf aur number dono hone chahiye.", st_pwWrongCurrent:"Current password ghalat hai.", st_pwFillAll:"Barah-e-karam tamam password fields bharein.",
       st_devices:"Logged-in Devices", st_hdevices:"Agar kisi nayi device pe login karna ho to neeche se koi device logout kar dein.",
-      st_logout:"Log Out (is device se)", st_version:"App Version", st_backup:"Data Backup", st_delete:"Account Delete Karein",
+      st_logout:"Log Out (is device se)", st_version:"App Version", st_backup:"Data Backup", st_backupVal:"Cloud (Firebase)", st_delete:"Account Delete Karein",
       st_logoutConfirm:"Kya aap waqai log out karna chahte hain?",
       st_deleteConfirm:"Ye aap ka account aur tamam data (measurements, orders, payments, profile) hamesha ke liye delete kar dega. Ye wapas nahi ho sakta. Jari rakhein?",
       st_deleteConfirm2:"Kya aap ko poora yaqeen hai? Cancel karne ka ye aakhri mauka hai.", inc_title:"Aamdani ka Khulasa", inc_hint:"Har order ki Order Date ke mutabiq darj payments par mabni.", inc_collToday:"Aaj Wasool", inc_billToday:"Aaj ka Bill", inc_collMonth:"Is Mahine Wasool", inc_billMonth:"Is Mahine ka Bill", inc_bookToday:"Aaj Book hue", inc_delivToday:"Aaj Deliver hue", inc_bookMonth:"Is Mahine Book hue", inc_delivMonth:"Is Mahine Deliver hue", inc_monthly:"Mahana Record", mr_title:"Mahana Record", mr_close:"Band Karein", mr_empty:"Abhi koi order nahi. Aap ka mahana record yahan nazar aayega.", mr_booked:"Book", mr_delivered:"Deliver", suit1:"suit", suitN:"suits", cap_title:"Rozana Suit ki Gunjaish", cap_hint:"Batayein ke aap aik din mein haqeeqat mein kitne suit deliver kar sakte hain. Agar kisi naye order ki delivery date par pehle hi bohat se suit due hon to aap ko khabardar kiya jayega.", cap_save:"Gunjaish Save Karein", cap_ph:"", exp_title:"Data Export", exp_hint:"Apne data ki copy spreadsheet file ki shakal mein download karein — accountant ko bhejne ke liye mufeed.", exp_meas:"Measurements Export Karein (CSV)", exp_orders:"Orders Export Karein (CSV)", use_meas:"Istemal shuda Measurements", use_orders:"Istemal shuda Orders" }
@@ -4007,6 +4009,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     root.querySelector('#st_l_logout').textContent = t.st_logout;
     root.querySelector('#st_l_version').textContent = t.st_version;
     root.querySelector('#st_l_backup').textContent = t.st_backup;
+    { const bv = root.querySelector('#st_backupStatus'); if(bv && t.st_backupVal) bv.textContent = t.st_backupVal; }
     root.querySelector('#st_l_delete').textContent = t.st_delete;
     const sx = (id, v) => { const el = document.getElementById(id); if(el && v !== undefined) el.textContent = v; };
     sx('pr_t_income', t.inc_title); sx('pr_h_income', t.inc_hint);
