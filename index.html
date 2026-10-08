@@ -163,6 +163,13 @@
     background:var(--bg); color:var(--ink); -webkit-text-fill-color:var(--ink); opacity:1; border-style:dashed;
   }
   .field-row input.missing{border-color:var(--danger)!important;}
+  /* Patti Width quick-pick chips (edit mode only) */
+  .patti-chips{ flex:1 1 100%; width:100%; margin:-2px 0 14px; }
+  .patti-chips .pc-lbl{ display:block; font-size:12px; color:var(--ink-soft); margin-bottom:6px; }
+  .patti-chips .pc-btns{ display:flex; gap:8px; flex-wrap:wrap; }
+  .patti-chips .pc-btns button{ border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:10px; padding:8px 12px; font-size:14px; font-weight:600; font-family:'Inter',sans-serif; }
+  .patti-chips .pc-btns button.selected{ border-color:var(--thread); background:var(--thread); color:#fff; }
+  #hm_detailScreen.viewing .patti-chips{ display:none; }
   .num-with-unit{position:relative;}
   .num-with-unit span{ position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--ink-soft); }
 
@@ -177,6 +184,7 @@
   #hm_detailScreen.viewing .form-body .field-row{ margin-bottom:8px; }
   #hm_detailScreen.viewing .form-body .field-row label{ font-size:12px; margin-bottom:0; }
   #hm_detailScreen.viewing .form-body .field-row input[type=number]:disabled,
+  #hm_detailScreen.viewing .form-body .field-row input.num-text:disabled,
   #hm_detailScreen.viewing .form-body .field-row textarea:disabled{ border:none; background:transparent; padding:0 0 0 22px; font-size:20px; font-weight:700; min-height:0; }
   #hm_detailScreen.viewing .form-body .field-row .num-with-unit span{ display:none; }
   #hm_detailScreen.viewing .form-body .field-row.compact-opt{ flex:1 1 calc(50% - 5px); min-width:130px; }
@@ -199,7 +207,8 @@
   #hm_detailScreen.viewing .form-body .field-row.compact-opt > label > span:not(.f-icon){ grid-column:2; grid-row:1; line-height:1.2; }
   #hm_detailScreen.viewing .form-body .field-row.compact-num > .num-with-unit,
   #hm_detailScreen.viewing .form-body .field-row.compact-opt > .opt-group{ grid-column:2; grid-row:2; min-width:0; }
-  #hm_detailScreen.viewing .form-body .field-row.compact-num input[type=number]:disabled{ padding:0; height:auto; line-height:1.2; }
+  #hm_detailScreen.viewing .form-body .field-row.compact-num input[type=number]:disabled,
+  #hm_detailScreen.viewing .form-body .field-row.compact-num input.num-text:disabled{ padding:0; height:auto; line-height:1.2; }
   #hm_detailScreen.viewing .form-body .f-icon{
     width:40px; height:40px; align-items:center; justify-content:center; border-radius:12px;
     background:rgba(185,138,34,.13); color:var(--brass);
@@ -300,6 +309,7 @@
     display:flex; flex-direction:column; align-items:center; gap:4px;
   }
   .bottom-nav button.active{ color:var(--thread); }
+  .bottom-nav button .nav-ic{ width:22px; height:22px; display:block; }
   .bottom-nav button .dot{ width:5px; height:5px; border-radius:50%; background:var(--thread); opacity:0; }
   .bottom-nav button.active .dot{ opacity:1; }
 
@@ -598,7 +608,8 @@
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="6" rx="1"/><path d="M4 12h16" stroke-dasharray="1.5 2"/></svg></span><span data-i18n="lbl_cuff">Cuff Length / Kaff</span></label><div class="num-with-unit"><input type="number" id="hm_k_cuff" disabled><span class="unit-lbl">in</span></div></div>
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8 7l4-4 4 4M8 17l4 4 4-4"/></svg></span><span data-i18n="lbl_cuffWidth">Cuff Width</span></label><div class="num-with-unit"><input type="number" id="hm_k_cuff_width" disabled><span class="unit-lbl">in</span></div></div>
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="2" width="5" height="20" rx="1"/><path d="M4 4v16"/><path d="M4 4l-1.5 2M4 4l1.5 2M4 20l-1.5-2M4 20l1.5-2"/></svg></span><span data-i18n="lbl_pattiLength">Patti Length</span></label><div class="num-with-unit"><input type="number" id="hm_k_patti_length" disabled><span class="unit-lbl">in</span></div></div>
-      <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="5" height="16" rx="1"/><path d="M8 12h9"/><path d="M8 12l1.5-1.5M8 12l1.5 1.5M17 12l-1.5-1.5M17 12l-1.5 1.5"/></svg></span><span data-i18n="lbl_pattiWidth">Patti Width</span></label><div class="num-with-unit"><input type="number" id="hm_k_patti_width" disabled><span class="unit-lbl">in</span></div></div>
+      <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="5" height="16" rx="1"/><path d="M8 12h9"/><path d="M8 12l1.5-1.5M8 12l1.5 1.5M17 12l-1.5-1.5M17 12l-1.5 1.5"/></svg></span><span data-i18n="lbl_pattiWidth">Patti Width</span></label><div class="num-with-unit"><input type="text" class="num-text" inputmode="text" autocomplete="off" id="hm_k_patti_width" disabled><span class="unit-lbl">in</span></div></div>
+      <div class="patti-chips"><span class="pc-lbl" data-i18n="lbl_pattiWidth">Patti Width</span><div class="pc-btns" data-target="hm_k_patti_width"><button type="button" data-v="1/2">1/2</button><button type="button" data-v="3/4">3/4</button><button type="button" data-v="1">1</button><button type="button" data-v="1 1/4">1 1/4</button><button type="button" data-v="1 1/2">1 1/2</button></div></div>
       <div class="section-title" data-i18n="sec_shalwar">Shalwar / Trouser</div>
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M8 5l4-3 4 3M8 19l4 3 4-3"/><path d="M9 8h2M9 11h2M9 14h2M9 17h2M13 8h2M13 11h2M13 14h2M13 17h2"/></svg></span><span data-i18n="lbl_length">Length</span></label><div class="num-with-unit"><input type="number" id="hm_s_length" disabled><span class="unit-lbl">in</span></div></div>
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10l-3 8 3 8H7l3-8z"/></svg></span><span data-i18n="lbl_waist">Waist</span></label><div class="num-with-unit"><input type="number" id="hm_s_waist" disabled><span class="unit-lbl">in</span></div></div>
@@ -701,7 +712,8 @@
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="6" rx="1"/><path d="M4 12h16" stroke-dasharray="1.5 2"/></svg></span><span data-i18n="lbl_cuff">Cuff Length / Kaff</span></label><div class="num-with-unit"><input type="number" id="ms_k_cuff"><span class="unit-lbl">in</span></div></div>
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8 7l4-4 4 4M8 17l4 4 4-4"/></svg></span><span data-i18n="lbl_cuffWidth">Cuff Width</span></label><div class="num-with-unit"><input type="number" id="ms_k_cuff_width"><span class="unit-lbl">in</span></div></div>
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="2" width="5" height="20" rx="1"/><path d="M4 4v16"/><path d="M4 4l-1.5 2M4 4l1.5 2M4 20l-1.5-2M4 20l1.5-2"/></svg></span><span data-i18n="lbl_pattiLength">Patti Length</span></label><div class="num-with-unit"><input type="number" id="ms_k_patti_length"><span class="unit-lbl">in</span></div></div>
-      <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="5" height="16" rx="1"/><path d="M8 12h9"/><path d="M8 12l1.5-1.5M8 12l1.5 1.5M17 12l-1.5-1.5M17 12l-1.5 1.5"/></svg></span><span data-i18n="lbl_pattiWidth">Patti Width</span></label><div class="num-with-unit"><input type="number" id="ms_k_patti_width"><span class="unit-lbl">in</span></div></div>
+      <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="5" height="16" rx="1"/><path d="M8 12h9"/><path d="M8 12l1.5-1.5M8 12l1.5 1.5M17 12l-1.5-1.5M17 12l-1.5 1.5"/></svg></span><span data-i18n="lbl_pattiWidth">Patti Width</span></label><div class="num-with-unit"><input type="text" class="num-text" inputmode="text" autocomplete="off" id="ms_k_patti_width"><span class="unit-lbl">in</span></div></div>
+      <div class="patti-chips"><span class="pc-lbl" data-i18n="lbl_pattiWidth">Patti Width</span><div class="pc-btns" data-target="ms_k_patti_width"><button type="button" data-v="1/2">1/2</button><button type="button" data-v="3/4">3/4</button><button type="button" data-v="1">1</button><button type="button" data-v="1 1/4">1 1/4</button><button type="button" data-v="1 1/2">1 1/2</button></div></div>
 
       <div class="section-title" data-i18n="sec_shalwar">Shalwar / Trouser</div>
       <div class="field-row"><label ><span class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M8 5l4-3 4 3M8 19l4 3 4-3"/><path d="M9 8h2M9 11h2M9 14h2M9 17h2M13 8h2M13 11h2M13 14h2M13 17h2"/></svg></span><span data-i18n="lbl_length">Length</span></label><div class="num-with-unit"><input type="number" id="ms_s_length"><span class="unit-lbl">in</span></div></div>
@@ -1034,10 +1046,10 @@
 
 <!-- ============ BOTTOM NAV ============ -->
 <nav class="bottom-nav" id="bottomNav">
-  <button class="nav-btn active" data-tab="home"><span class="dot"></span><span data-i18n="hm_title">Customer</span></button>
-  <button class="nav-btn" data-tab="measurement"><span class="dot"></span><span data-i18n="ms_title">Measurement</span></button>
-  <button class="nav-btn" data-tab="order"><span class="dot"></span><span data-i18n="or_title">Orders</span></button>
-  <button class="nav-btn" data-tab="profile"><span class="dot"></span><span data-i18n="nav_profile">Profile</span></button>
+  <button class="nav-btn active" data-tab="home"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.6 0 4.5 2 4.5 4.8"/></svg><span class="dot"></span><span data-i18n="hm_title">Customer</span></button>
+  <button class="nav-btn" data-tab="measurement"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6.5 8v3M10 8v4.5M13.5 8v3M17 8v4.5"/></svg><span class="dot"></span><span data-i18n="ms_title">Measurement</span></button>
+  <button class="nav-btn" data-tab="order"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 10h7M8.5 14h7M8.5 18h4"/></svg><span class="dot"></span><span data-i18n="or_title">Orders</span></button>
+  <button class="nav-btn" data-tab="profile"><svg class="nav-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c0-4.1 3.4-7 7.5-7s7.5 2.9 7.5 7"/></svg><span class="dot"></span><span data-i18n="nav_profile">Profile</span></button>
 </nav>
 
 <div class="toast" id="pr_toast">Saved</div>
@@ -2772,6 +2784,7 @@ function selectOpt(root, group, val){
     b.classList.toggle('selected', b.dataset.val === val);
   });
 }
+function textVal(root, id){ const el = root.querySelector('#'+id); const v = (el.value||'').trim(); return v === '' ? null : v; }
 function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.value; return v === '' ? null : Number(v); }
 
 /* ============ HOME MODULE ============ */
@@ -3029,7 +3042,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       k: {
         length: numVal(root,'hm_k_length'), shoulder: numVal(root,'hm_k_shoulder'), sleeve_len: numVal(root,'hm_k_sleeve_len'),
         chest: numVal(root,'hm_k_chest'), daman: numVal(root,'hm_k_daman'), waist: numVal(root,'hm_k_waist'), bazu: numVal(root,'hm_k_bazu'),
-        collar_size: numVal(root,'hm_k_collar_size'), armhole: numVal(root,'hm_k_armhole'), cuff: numVal(root,'hm_k_cuff'), cuff_width: numVal(root,'hm_k_cuff_width'),
+        collar_size: numVal(root,'hm_k_collar_size'), armhole: numVal(root,'hm_k_armhole'), cuff: numVal(root,'hm_k_cuff'), cuff_width: numVal(root,'hm_k_cuff_width'), patti_length: numVal(root,'hm_k_patti_length'), patti_width: textVal(root,'hm_k_patti_width'),
         side_pockets: getOpt(root,'hmSidePockets')
       },
       s: {
@@ -3236,7 +3249,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       k: {
         length: numVal(root,'ms_k_length'), shoulder: numVal(root,'ms_k_shoulder'), sleeve_len: numVal(root,'ms_k_sleeve_len'),
         chest: numVal(root,'ms_k_chest'), daman: numVal(root,'ms_k_daman'), waist: numVal(root,'ms_k_waist'), bazu: numVal(root,'ms_k_bazu'),
-        collar_size: numVal(root,'ms_k_collar_size'), armhole: numVal(root,'ms_k_armhole'), cuff: numVal(root,'ms_k_cuff'), cuff_width: numVal(root,'ms_k_cuff_width'),
+        collar_size: numVal(root,'ms_k_collar_size'), armhole: numVal(root,'ms_k_armhole'), cuff: numVal(root,'ms_k_cuff'), cuff_width: numVal(root,'ms_k_cuff_width'), patti_length: numVal(root,'ms_k_patti_length'), patti_width: textVal(root,'ms_k_patti_width'),
         side_pockets: getOpt(root,'msSidePockets')
       },
       s: {
@@ -4373,6 +4386,27 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     navigator.serviceWorker.register('sw.js').catch(function(e){ console.warn('SW register failed', e); });
   });
 }
+
+/* Patti Width quick-pick chips: tap to fill, tap again to clear; typing by hand still works */
+(function(){
+  function sync(){
+    document.querySelectorAll('.patti-chips .pc-btns').forEach(g=>{
+      const inp=document.getElementById(g.dataset.target); if(!inp) return;
+      const v=(inp.value||'').trim();
+      g.querySelectorAll('button').forEach(b=>b.classList.toggle('selected', v!=='' && b.dataset.v===v));
+    });
+  }
+  document.addEventListener('click', function(ev){
+    const b=ev.target.closest && ev.target.closest('.patti-chips .pc-btns button'); if(!b) return;
+    const inp=document.getElementById(b.parentNode.dataset.target);
+    if(!inp || inp.disabled) return;
+    inp.value = ((inp.value||'').trim()===b.dataset.v) ? '' : b.dataset.v;
+    inp.dispatchEvent(new Event('input',{bubbles:true}));
+    sync();
+  });
+  document.addEventListener('input', sync);
+  setInterval(sync, 400);
+})();
 </script>
 </body>
 </html>
