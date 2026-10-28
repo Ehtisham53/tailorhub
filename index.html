@@ -1942,9 +1942,9 @@ function isPremium(){ return getSubscriptionInfo().active; }
    IDs (or change these strings to match whatever IDs you actually create)
    and the purchase flow works immediately, no other code changes needed. */
 const SUB_PLANS = [
-  { id:'monthly', months:1, price:250,  sku:'tailorhub_premium_monthly', discountPct:0,  maxDevices:2 },
-  { id:'plan3',   months:3, price:650,  sku:'tailorhub_premium_3month',  discountPct:13, maxDevices:2 },
-  { id:'plan6',   months:6, price:1200, sku:'tailorhub_premium_6month',  discountPct:20, maxDevices:3 }
+  { id:'monthly', months:1, price:250,  sku:'premium_monthly', discountPct:0,  maxDevices:2 },
+  { id:'plan3',   months:3, price:650,  sku:'premium_3month',  discountPct:13, maxDevices:2 },
+  { id:'plan6',   months:6, price:1200, sku:'premium_6month',  discountPct:20, maxDevices:3 }
 ];
 /* Feature list shown on the upgrade sheet — same set for every plan (only
    price/duration/device-count differ, shown per plan card below). AI
