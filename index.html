@@ -1141,6 +1141,15 @@ const VAPID_KEY = 'BD8-EnwfxOg8FCqrm_hZBHLIljwgq78cuEJQIBThMW9gOAq8LdyH2DaolPAME
 const PUSH_ENABLED = false;
 /* Premium purchases: false during closed testing (testers see a "Coming soon" popup); set true at launch. */
 const PREMIUM_PURCHASE_OPEN = false;
+/* Tester-only gate: while PREMIUM_PURCHASE_OPEN is false, real purchase opens
+   only for these TailorHub login emails (testing). Remove/empty at launch. */
+const PURCHASE_TESTER_EMAILS = ['eshajani128@gmail.com'];
+function isPurchaseTester(){
+  try{
+    const em = (auth.currentUser && auth.currentUser.email || '').trim().toLowerCase();
+    return !!em && PURCHASE_TESTER_EMAILS.indexOf(em) !== -1;
+  }catch(e){ return false; }
+}
 let messaging = null;
 try{ if(firebase.messaging && firebase.messaging.isSupported && firebase.messaging.isSupported()) messaging = firebase.messaging(); }catch(e){ /* messaging unsupported on this browser/webview, ignore */ }
 
@@ -2005,7 +2014,7 @@ function applyPurchasedPlan(plan){
 }
 
 async function startPurchase(plan){
-  if(!PREMIUM_PURCHASE_OPEN){ await customAlert(T('up_comingSoon')); return; }
+  if(!PREMIUM_PURCHASE_OPEN && !isPurchaseTester()){ await customAlert(T('up_comingSoon')); return; }
   document.getElementById('upgradeOverlay').style.display = 'none';
   if(window.getDigitalGoodsService){
     try{
@@ -2022,7 +2031,7 @@ async function startPurchase(plan){
       try{
         const purchases = await service.listPurchases();
         const match = purchases.find(p => p.itemId === plan.sku);
-        if(match && match.purchaseToken) await service.acknowledge(match.purchaseToken, 'repeatable');
+        if(match && match.purchaseToken) await service.acknowledge(match.purchaseToken, 'onetime');
       }catch(ackErr){ console.warn('acknowledge failed:', ackErr); }
       applyPurchasedPlan(plan);
       await customAlert(T('up_purchaseSuccess'));
