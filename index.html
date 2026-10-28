@@ -1193,6 +1193,7 @@ async function setupPushNotifications(uid){
      and reads are served instantly from the local cache meanwhile. */
 let userDocRef = null;
 let userDocUnsub = null;
+let playReconcileDone = false; /* Play Store premium re-check runs once per login session */
 
 function refreshCurrentView(){
   applyAppLang(currentLang());
@@ -1247,12 +1248,14 @@ function startUserDocSync(uid){
     localStorage.setItem(SUB_EXPIRY_KEY, (data.planExpiry && data.planExpiry.toMillis) ? String(data.planExpiry.toMillis()) : '');
     localStorage.setItem(SUB_TYPE_KEY, data.planType || '');
     refreshCurrentView();
+    if(!playReconcileDone){ playReconcileDone = true; reconcilePlayPurchases(); }
   }, (err) => { console.warn('cloud sync error:', err); });
 }
 
 function stopUserDocSync(){
   if(userDocUnsub){ userDocUnsub(); userDocUnsub = null; }
   userDocRef = null;
+  playReconcileDone = false;
 }
 
 /* ============ DEVICE IDENTITY ============ */
@@ -2013,6 +2016,54 @@ function applyPurchasedPlan(plan){
   refreshCurrentView();
 }
 
+/* ============ PLAY STORE PREMIUM RE-CHECK ============
+   Runs once after login, only inside the Play Store app (Digital Goods API),
+   only for accounts that got Premium through a real plan (planType set) —
+   manually granted Premium (review account, friends/family) is never touched.
+   - Active Play subscription found + our expiry is due within 1 day: extend
+     the expiry by that plan's months (this is how renewals reach the app).
+   - Call succeeded, NO active subscription, and the purchase was made on THIS
+     phone (flag set at purchase time; testers always count): back to Free
+     (covers refund, cancel-after-period-end, expiry).
+   - Any error / offline / no Digital Goods: nothing changes. */
+const PLAY_PURCHASE_FLAG_KEY = 'tailorhub_play_purchase_here';
+async function reconcilePlayPurchases(){
+  try{
+    if(!window.getDigitalGoodsService || !userDocRef) return;
+    if(navigator.onLine === false) return;
+    if(loadProfile().plan !== 'premium') return;
+    const storedPlan = SUB_PLANS.find(x => x.id === getSubPlanType());
+    if(!storedPlan) return;
+    const service = await window.getDigitalGoodsService(PLAY_BILLING_METHOD);
+    const purchases = await service.listPurchases();
+    const skus = SUB_PLANS.map(p => p.sku);
+    const active = (purchases || []).filter(p => skus.indexOf(p.itemId) !== -1);
+    if(active.length){
+      try{ localStorage.setItem(PLAY_PURCHASE_FLAG_KEY, '1'); }catch(_e){}
+      const livePlan = SUB_PLANS.find(p => p.sku === active[0].itemId) || storedPlan;
+      const expiry = getSubExpiryMs();
+      const now = Date.now();
+      if(expiry && expiry <= now + 24 * 60 * 60 * 1000){
+        const newExpiry = addMonths(Math.max(expiry, now), livePlan.months);
+        await userDocRef.set({
+          plan: 'premium',
+          planExpiry: firebase.firestore.Timestamp.fromMillis(newExpiry),
+          planType: livePlan.id
+        }, { merge: true });
+      }
+    } else {
+      const boughtHere = localStorage.getItem(PLAY_PURCHASE_FLAG_KEY) === '1' || isPurchaseTester();
+      if(boughtHere){
+        await userDocRef.set({
+          plan: 'free',
+          planExpiry: firebase.firestore.FieldValue.delete(),
+          planType: firebase.firestore.FieldValue.delete()
+        }, { merge: true });
+      }
+    }
+  }catch(e){ console.warn('play premium re-check skipped:', e); }
+}
+
 async function startPurchase(plan){
   if(!PREMIUM_PURCHASE_OPEN && !isPurchaseTester()){ await customAlert(T('up_comingSoon')); return; }
   document.getElementById('upgradeOverlay').style.display = 'none';
@@ -2033,6 +2084,7 @@ async function startPurchase(plan){
         const match = purchases.find(p => p.itemId === plan.sku);
         if(match && match.purchaseToken) await service.acknowledge(match.purchaseToken, 'onetime');
       }catch(ackErr){ console.warn('acknowledge failed:', ackErr); }
+      try{ localStorage.setItem(PLAY_PURCHASE_FLAG_KEY, '1'); }catch(_e){}
       applyPurchasedPlan(plan);
       await customAlert(T('up_purchaseSuccess'));
     }catch(e){
