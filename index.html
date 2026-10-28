@@ -1139,8 +1139,8 @@ const VAPID_KEY = 'BD8-EnwfxOg8FCqrm_hZBHLIljwgq78cuEJQIBThMW9gOAq8LdyH2DaolPAME
 /* PAUSED: set to true only after Firebase Blaze + the reminder Cloud Function are deployed.
    While false, users are not asked for notification permission. */
 const PUSH_ENABLED = false;
-/* Premium purchases: false during closed testing (testers see a "Coming soon" popup); set true at launch. */
-const PREMIUM_PURCHASE_OPEN = false;
+/* Premium purchases: OPEN for everyone (launched). */
+const PREMIUM_PURCHASE_OPEN = true;
 /* Tester-only gate: while PREMIUM_PURCHASE_OPEN is false, real purchase opens
    only for these TailorHub login emails (testing). Remove/empty at launch. */
 const PURCHASE_TESTER_EMAILS = ['eshajani128@gmail.com'];
