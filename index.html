@@ -329,6 +329,10 @@
   .meta-row:last-child{ border-bottom:none; }
   .meta-row .val{ color:var(--ink); font-weight:600; }
   .meta-row .contact-link{ color:var(--thread); font-weight:600; text-decoration:underline; }
+  .support-row{ display:flex; gap:14px; align-items:center; padding:4px 0; }
+  .support-ic{ width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1.5px solid var(--line); background:var(--surface); text-decoration:none; }
+  .support-ic.email{ border-color:var(--thread); }
+  .support-ic.wa{ border-color:#25D366; }
   .toast{
     position:fixed; bottom:76px; left:50%; transform:translateX(-50%);
     background:var(--ink); color:#fff; padding:10px 18px; border-radius:20px;
@@ -983,8 +987,7 @@
 
     <div class="card">
       <div class="section-title" id="pr_t_contact">Contact / Help</div>
-      <div class="meta-row"><span id="pr_l_contactEmail">Email</span><a class="val contact-link" id="pr_contactEmailVal" href="mailto:support.legacydigital@gmail.com?subject=TailorHub%20Support">Send Email</a></div>
-      <div class="meta-row" id="pr_contactWaRow"><span id="pr_l_contactWa">WhatsApp</span><a class="val contact-link" id="pr_contactWaVal" href="#" target="_blank" rel="noopener">Chat on WhatsApp</a></div>
+      <div class="support-row"><a class="support-ic email" id="pr_contactEmailVal" href="mailto:support.legacydigital@gmail.com?subject=TailorHub%20Support" aria-label="Email"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8B3A3A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></a><span id="pr_contactWaRow" style="display:none;"><a class="support-ic wa" id="pr_contactWaVal" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg width="24" height="24" viewBox="0 0 24 24" fill="#25D366"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.48 1.32 5l-1.4 5.12 5.24-1.37c1.46.8 3.1 1.22 4.75 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m0 1.8c2.19 0 4.25.85 5.79 2.4a8.13 8.13 0 0 1 2.4 5.79c0 4.52-3.68 8.2-8.2 8.2a8.2 8.2 0 0 1-4.18-1.15l-.3-.17-3.11.82.83-3.03-.19-.31a8.13 8.13 0 0 1-1.25-4.35c0-4.53 3.68-8.2 8.21-8.2m4.52 11.7c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.24-.64.8-.78.97-.15.17-.29.19-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.71-.14-.24-.02-.37.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.24-.87.85-.87 2.08 0 1.22.89 2.4 1.01 2.57.13.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28"/></svg></a></span></div>
     </div>
 
     <button class="btn-save" style="width:100%;" id="pr_btnSave">Save Changes</button>
@@ -1071,6 +1074,43 @@ function customAlert(message, okLabel){
     okBtn.addEventListener('click', () => { overlay.classList.remove('show'); resolve(); });
     btns.appendChild(okBtn);
     overlay.classList.add('show');
+  });
+}
+function customPasswordPrompt(message, okLabel, cancelLabel){
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('cmOverlay');
+    const msgEl = document.getElementById('cmMsg');
+    const btns = document.getElementById('cmBtns');
+    msgEl.textContent = message;
+    const old = document.getElementById('cmPwWrap'); if(old) old.remove();
+    const wrap = document.createElement('div');
+    wrap.id = 'cmPwWrap';
+    wrap.className = 'field-row';
+    wrap.style.marginBottom = '16px';
+    wrap.innerHTML = '<div class="pw-wrap"><input type="password" id="cmPwInput" autocomplete="current-password"><button type="button" class="pw-eye" id="cmPwEye">\uD83D\uDC41</button></div>';
+    msgEl.insertAdjacentElement('afterend', wrap);
+    const input = wrap.querySelector('#cmPwInput');
+    const eye = wrap.querySelector('#cmPwEye');
+    eye.addEventListener('click', () => {
+      if(input.type === 'password'){ input.type = 'text'; eye.textContent = '\uD83D\uDE48'; }
+      else { input.type = 'password'; eye.textContent = '\uD83D\uDC41'; }
+    });
+    const close = (val) => { overlay.classList.remove('show'); wrap.remove(); resolve(val); };
+    btns.innerHTML = '';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'cm-btn-cancel';
+    cancelBtn.textContent = cancelLabel || 'Cancel';
+    cancelBtn.addEventListener('click', () => close(null));
+    const okBtn = document.createElement('button');
+    okBtn.className = 'cm-btn-danger';
+    okBtn.textContent = okLabel || 'OK';
+    const submit = () => { if(!input.value){ input.focus(); return; } close(input.value); };
+    okBtn.addEventListener('click', submit);
+    input.addEventListener('keydown', (ev) => { if(ev.key === 'Enter') submit(); });
+    btns.appendChild(cancelBtn);
+    btns.appendChild(okBtn);
+    overlay.classList.add('show');
+    setTimeout(() => { try{ input.focus(); }catch(e){} }, 50);
   });
 }
 function customConfirm(message, okLabel, cancelLabel, danger){
@@ -1933,7 +1973,7 @@ const GRACE_MS = 60 * 60 * 1000; // 1 hour (measurement/order accidental-delete 
    and only after a 24-hour grace period past the expiry date. */
 const SUB_EXPIRY_KEY = 'tailorhub_sub_expiry';
 const SUB_TYPE_KEY = 'tailorhub_sub_type';
-const SUB_GRACE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const SUB_GRACE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (matches Play grace period)
 function getSubExpiryMs(){ const v = Number(localStorage.getItem(SUB_EXPIRY_KEY)); return v || null; }
 function getSubPlanType(){ return localStorage.getItem(SUB_TYPE_KEY) || ''; }
 function getSubscriptionInfo(){
@@ -1997,17 +2037,17 @@ function addMonths(ms, months){ const d = new Date(ms); d.setMonth(d.getMonth() 
    place `plan` already lives) — the existing onSnapshot listener mirrors it
    back into localStorage/profile automatically, so no extra UI refresh code
    is needed beyond calling refreshCurrentView() once for immediate feedback. */
-function applyPurchasedPlan(plan){
+function applyPurchasedPlan(plan, purchaseToken){
   const now = Date.now();
   const currentExpiry = getSubExpiryMs();
   const base = (currentExpiry && currentExpiry > now) ? currentExpiry : now; // renewing early stacks remaining time
   const newExpiry = addMonths(base, plan.months);
   if(userDocRef){
-    userDocRef.set({
+    userDocRef.set(Object.assign({
       plan: 'premium',
       planExpiry: firebase.firestore.Timestamp.fromMillis(newExpiry),
       planType: plan.id
-    }, { merge: true }).catch(e => console.warn('plan update failed:', e));
+    }, (typeof purchaseToken === 'string' && purchaseToken) ? { purchaseToken: purchaseToken } : {}), { merge: true }).catch(e => console.warn('plan update failed:', e));
   } else {
     localStorage.setItem(SUB_EXPIRY_KEY, String(newExpiry));
     localStorage.setItem(SUB_TYPE_KEY, plan.id);
@@ -2048,11 +2088,11 @@ async function reconcilePlayPurchases(){
            until it is past "now" — so opening the app late doesn't give free extra days */
         let newExpiry = expiry, guard = 0;
         do { newExpiry = addMonths(newExpiry, livePlan.months); guard++; } while(newExpiry <= now && guard < 60);
-        await userDocRef.set({
+        await userDocRef.set(Object.assign({
           plan: 'premium',
           planExpiry: firebase.firestore.Timestamp.fromMillis(newExpiry),
           planType: livePlan.id
-        }, { merge: true });
+        }, (typeof active[0].purchaseToken === 'string' && active[0].purchaseToken) ? { purchaseToken: active[0].purchaseToken } : {}), { merge: true });
       }
     } else {
       const boughtHere = localStorage.getItem(PLAY_PURCHASE_FLAG_KEY) === '1' || isPurchaseTester();
@@ -2082,13 +2122,14 @@ async function startPurchase(plan){
       );
       const payResponse = await request.show();
       await payResponse.complete('success');
+      let boughtToken = null;
       try{
         const purchases = await service.listPurchases();
         const match = purchases.find(p => p.itemId === plan.sku);
-        if(match && match.purchaseToken) await service.acknowledge(match.purchaseToken, 'onetime');
+        if(match && match.purchaseToken){ boughtToken = match.purchaseToken; await service.acknowledge(match.purchaseToken, 'onetime'); }
       }catch(ackErr){ console.warn('acknowledge failed:', ackErr); }
       try{ localStorage.setItem(PLAY_PURCHASE_FLAG_KEY, '1'); }catch(_e){}
-      applyPurchasedPlan(plan);
+      applyPurchasedPlan(plan, boughtToken);
       await customAlert(T('up_purchaseSuccess'));
     }catch(e){
       if(e && e.name !== 'AbortError') await customAlert(T('up_purchaseFail'));
@@ -2267,7 +2308,7 @@ const APP_STR = {
     feat_unlimitedEntries:"Unlimited measurements & orders",
     feat_unlimitedPins:"Unlimited pinned customers",
     feat_orderPhoto:"Attach a photo to any order",
-    auth_tagline:"Manage your tailoring shop in one place", auth_loginTitle:"Log In", auth_loginSub:"Log in with your email to continue", auth_email:"Email", auth_password:"Password", auth_forgot:"Forgot Password?", auth_loginBtn:"Log In", auth_noAccount:"Don't have an account?", auth_signupLink:"Sign Up", auth_signupTitle:"Create Account", auth_signupSub:"Sign up with your email to get started", auth_confirmPassword:"Confirm Password", pw_hint:"At least 6 characters, letters and numbers together.", ae_pwRule:"Password must contain both letters and numbers.", auth_country:"Country", auth_selectCountry:"Select your country", ae_needCountry:"Please select your country.", auth_signupBtn:"Create Account", auth_haveAccount:"Already have an account?", auth_loginLink:"Log In", auth_forgotTitle:"Reset Password", auth_forgotSub:"Enter your email and we'll send you a reset link", auth_sendReset:"Send Reset Link", auth_backToLogin:"Back to Log In", auth_resetTitle:"Set New Password", auth_resetSub:"Choose a new password for your account", auth_newPassword:"New Password", auth_resetBtn:"Update Password", auth_blockedTitle:"Device Limit Reached", auth_blockedSub:"You've reached the device sign-in limit for this account. Log out of one of your other devices first, or if you no longer have access to those devices, you can log out everywhere below.", auth_blockedCancel:"Go Back", auth_blockedForce:"I Don't Have Access — Log Out Everywhere", ae_invalidEmail:"That email address looks invalid.", ae_disabled:"This account has been disabled.", ae_noUser:"No account found with that email.", ae_wrongPw:"Incorrect password.", ae_badCred:"Incorrect email or password.", ae_emailInUse:"An account already exists with that email.", ae_weakPw:"Password should be at least 6 characters.", ae_tooMany:"Too many attempts. Please wait a moment and try again.", ae_network:"Network error. Check your internet connection.", ae_generic:"Something went wrong. Please try again.", ae_needEmailPw:"Please enter your email and password.", ae_fillAll:"Please fill in every field.", ae_pwMismatch:"Passwords do not match.", ae_needEmail:"Please enter your email.", ae_resetSent:"Reset link sent — check your email inbox (and spam folder).", ae_linkExpired:"This reset link is invalid or has expired. Please request a new one.", ae_fillBoth:"Please fill in both fields.", ae_pwUpdated:"Password updated — please log in.",
+    auth_tagline:"Manage your tailoring shop in one place", auth_loginTitle:"Log In", auth_loginSub:"Log in with your email to continue", auth_email:"Email", auth_password:"Password", auth_forgot:"Forgot Password?", auth_loginBtn:"Log In", auth_noAccount:"Don't have an account?", auth_signupLink:"Sign Up", auth_signupTitle:"Create Account", auth_signupSub:"Sign up with your email to get started", auth_confirmPassword:"Confirm Password", pw_hint:"At least 6 characters, letters and numbers together.", ae_pwRule:"Password must contain both letters and numbers.", auth_country:"Country", auth_selectCountry:"Select your country", ae_needCountry:"Please select your country.", auth_signupBtn:"Create Account", auth_haveAccount:"Already have an account?", auth_loginLink:"Log In", auth_forgotTitle:"Reset Password", auth_forgotSub:"Enter your email and we'll send you a reset link", auth_sendReset:"Send Reset Link", auth_backToLogin:"Back to Log In", auth_resetTitle:"Set New Password", auth_resetSub:"Choose a new password for your account", auth_newPassword:"New Password", auth_resetBtn:"Update Password", auth_blockedTitle:"Device Limit Reached", auth_blockedSub:"You've reached the device sign-in limit for this account. Log out of one of your other devices first, or if you no longer have access to those devices, you can log out everywhere below.", auth_blockedCancel:"Go Back", auth_blockedForce:"I Don't Have Access — Log Out Everywhere", ae_invalidEmail:"That email address looks invalid.", ae_disabled:"This account has been disabled.", ae_noUser:"No account found with that email.", ae_wrongPw:"Incorrect password.", ae_badCred:"Incorrect email or password.", ae_emailInUse:"This email is already registered. Please log in instead.", ae_weakPw:"Password should be at least 6 characters.", ae_tooMany:"Too many attempts. Please wait a moment and try again.", ae_network:"Network error. Check your internet connection.", ae_generic:"Something went wrong. Please try again.", ae_needEmailPw:"Please enter your email and password.", ae_fillAll:"Please fill in every field.", ae_pwMismatch:"Passwords do not match.", ae_needEmail:"Please enter your email.", ae_resetSent:"Reset link sent — check your email inbox (and spam folder).", ae_linkExpired:"This reset link is invalid or has expired. Please request a new one.", ae_fillBoth:"Please fill in both fields.", ae_pwUpdated:"Password updated — please log in.",
     ver_title:"Verify your email", ver_sub:"We sent a verification link to {email}. Open it, then come back and tap Continue.", ver_continue:"Continue", ver_resend:"Resend email", ver_logout:"Log Out", ver_notYet:"Your email is not verified yet. Open the link we sent you, then tap Continue again.", ver_sent:"Verification email sent. Please also check your Spam folder.",
     feat_incomeSummary:"Daily & monthly income summary",
     feat_dataExport:"Export measurements & orders (CSV)",
@@ -2288,7 +2329,7 @@ const APP_STR = {
     banner_expired:"Your Premium subscription has expired. Premium features are locked — resubscribe to continue.",
     banner_renew:"Renew", pr_validTill:"Valid Till",
     btn_ok:"OK", msg_completeProfile:"Please complete your profile (shop name, tailor name and phone number) before adding measurements or orders.",
-    msg_phoneAlreadyRegistered:"This phone number is already registered with another TailorHub account. Please use a different number."
+    msg_phoneAlreadyRegistered:"This phone number is already registered. Please use a different number."
   },
   ur:{
     hm_title:"کسٹمر", hm_search:"نام، سیریل نمبر یا فون نمبر سے تلاش کریں",
@@ -2351,7 +2392,7 @@ const APP_STR = {
     feat_unlimitedEntries:"لامحدود پیمائشیں اور آرڈرز",
     feat_unlimitedPins:"لامحدود پن شدہ کسٹمرز",
     feat_orderPhoto:"کسی بھی آرڈر پر تصویر لگائیں",
-    auth_tagline:"اپنی ٹیلرنگ شاپ ایک ہی جگہ سنبھالیں", auth_loginTitle:"لاگ اِن", auth_loginSub:"جاری رکھنے کے لیے اپنی ای میل سے لاگ اِن کریں", auth_email:"ای میل", auth_password:"پاس ورڈ", auth_forgot:"پاس ورڈ بھول گئے؟", auth_loginBtn:"لاگ اِن", auth_noAccount:"اکاؤنٹ نہیں ہے؟", auth_signupLink:"سائن اپ", auth_signupTitle:"اکاؤنٹ بنائیں", auth_signupSub:"شروع کرنے کے لیے اپنی ای میل سے سائن اپ کریں", auth_confirmPassword:"پاس ورڈ کی تصدیق", pw_hint:"کم از کم 6 حروف، حروف اور ہندسے ملا کر۔", ae_pwRule:"پاس ورڈ میں حروف اور ہندسے دونوں ہونے چاہییں۔", auth_country:"ملک", auth_selectCountry:"اپنا ملک چنیں", ae_needCountry:"براہ کرم اپنا ملک چنیں۔", auth_signupBtn:"اکاؤنٹ بنائیں", auth_haveAccount:"پہلے سے اکاؤنٹ ہے؟", auth_loginLink:"لاگ اِن", auth_forgotTitle:"پاس ورڈ ری سیٹ کریں", auth_forgotSub:"اپنی ای میل لکھیں، ہم آپ کو ری سیٹ لنک بھیج دیں گے", auth_sendReset:"ری سیٹ لنک بھیجیں", auth_backToLogin:"لاگ اِن پر واپس جائیں", auth_resetTitle:"نیا پاس ورڈ سیٹ کریں", auth_resetSub:"اپنے اکاؤنٹ کے لیے نیا پاس ورڈ چنیں", auth_newPassword:"نیا پاس ورڈ", auth_resetBtn:"پاس ورڈ اپ ڈیٹ کریں", auth_blockedTitle:"ڈیوائس کی حد پوری ہو گئی", auth_blockedSub:"اس اکاؤنٹ کے لیے ڈیوائس لاگ اِن کی حد پوری ہو چکی ہے۔ پہلے اپنی کسی دوسری ڈیوائس سے لاگ آؤٹ کریں، یا اگر ان ڈیوائسز تک رسائی نہیں ہے تو نیچے سے ہر جگہ سے لاگ آؤٹ کر سکتے ہیں۔", auth_blockedCancel:"واپس جائیں", auth_blockedForce:"میری رسائی نہیں ہے — ہر جگہ سے لاگ آؤٹ کریں", ae_invalidEmail:"یہ ای میل ایڈریس درست نہیں لگ رہا۔", ae_disabled:"یہ اکاؤنٹ بند کر دیا گیا ہے۔", ae_noUser:"اس ای میل سے کوئی اکاؤنٹ نہیں ملا۔", ae_wrongPw:"پاس ورڈ غلط ہے۔", ae_badCred:"ای میل یا پاس ورڈ غلط ہے۔", ae_emailInUse:"اس ای میل سے پہلے ہی اکاؤنٹ بنا ہوا ہے۔", ae_weakPw:"پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے۔", ae_tooMany:"بہت زیادہ کوششیں ہو گئیں۔ تھوڑی دیر انتظار کریں اور دوبارہ کوشش کریں۔", ae_network:"نیٹ ورک کا مسئلہ ہے۔ اپنا انٹرنیٹ چیک کریں۔", ae_generic:"کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔", ae_needEmailPw:"براہ کرم اپنی ای میل اور پاس ورڈ لکھیں۔", ae_fillAll:"براہ کرم ہر خانہ بھریں۔", ae_pwMismatch:"پاس ورڈ آپس میں نہیں ملتے۔", ae_needEmail:"براہ کرم اپنی ای میل لکھیں۔", ae_resetSent:"ری سیٹ لنک بھیج دیا گیا ہے — اپنا ان باکس اور اسپیم فولڈر دیکھیں۔", ae_linkExpired:"یہ ری سیٹ لنک درست نہیں یا اس کی مدت ختم ہو چکی ہے۔ براہ کرم نیا لنک منگوائیں۔", ae_fillBoth:"براہ کرم دونوں خانے بھریں۔", ae_pwUpdated:"پاس ورڈ اپ ڈیٹ ہو گیا — براہ کرم لاگ اِن کریں۔",
+    auth_tagline:"اپنی ٹیلرنگ شاپ ایک ہی جگہ سنبھالیں", auth_loginTitle:"لاگ اِن", auth_loginSub:"جاری رکھنے کے لیے اپنی ای میل سے لاگ اِن کریں", auth_email:"ای میل", auth_password:"پاس ورڈ", auth_forgot:"پاس ورڈ بھول گئے؟", auth_loginBtn:"لاگ اِن", auth_noAccount:"اکاؤنٹ نہیں ہے؟", auth_signupLink:"سائن اپ", auth_signupTitle:"اکاؤنٹ بنائیں", auth_signupSub:"شروع کرنے کے لیے اپنی ای میل سے سائن اپ کریں", auth_confirmPassword:"پاس ورڈ کی تصدیق", pw_hint:"کم از کم 6 حروف، حروف اور ہندسے ملا کر۔", ae_pwRule:"پاس ورڈ میں حروف اور ہندسے دونوں ہونے چاہییں۔", auth_country:"ملک", auth_selectCountry:"اپنا ملک چنیں", ae_needCountry:"براہ کرم اپنا ملک چنیں۔", auth_signupBtn:"اکاؤنٹ بنائیں", auth_haveAccount:"پہلے سے اکاؤنٹ ہے؟", auth_loginLink:"لاگ اِن", auth_forgotTitle:"پاس ورڈ ری سیٹ کریں", auth_forgotSub:"اپنی ای میل لکھیں، ہم آپ کو ری سیٹ لنک بھیج دیں گے", auth_sendReset:"ری سیٹ لنک بھیجیں", auth_backToLogin:"لاگ اِن پر واپس جائیں", auth_resetTitle:"نیا پاس ورڈ سیٹ کریں", auth_resetSub:"اپنے اکاؤنٹ کے لیے نیا پاس ورڈ چنیں", auth_newPassword:"نیا پاس ورڈ", auth_resetBtn:"پاس ورڈ اپ ڈیٹ کریں", auth_blockedTitle:"ڈیوائس کی حد پوری ہو گئی", auth_blockedSub:"اس اکاؤنٹ کے لیے ڈیوائس لاگ اِن کی حد پوری ہو چکی ہے۔ پہلے اپنی کسی دوسری ڈیوائس سے لاگ آؤٹ کریں، یا اگر ان ڈیوائسز تک رسائی نہیں ہے تو نیچے سے ہر جگہ سے لاگ آؤٹ کر سکتے ہیں۔", auth_blockedCancel:"واپس جائیں", auth_blockedForce:"میری رسائی نہیں ہے — ہر جگہ سے لاگ آؤٹ کریں", ae_invalidEmail:"یہ ای میل ایڈریس درست نہیں لگ رہا۔", ae_disabled:"یہ اکاؤنٹ بند کر دیا گیا ہے۔", ae_noUser:"اس ای میل سے کوئی اکاؤنٹ نہیں ملا۔", ae_wrongPw:"پاس ورڈ غلط ہے۔", ae_badCred:"ای میل یا پاس ورڈ غلط ہے۔", ae_emailInUse:"یہ ای میل پہلے سے رجسٹرڈ ہے۔ براہ کرم لاگ اِن کریں۔", ae_weakPw:"پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے۔", ae_tooMany:"بہت زیادہ کوششیں ہو گئیں۔ تھوڑی دیر انتظار کریں اور دوبارہ کوشش کریں۔", ae_network:"نیٹ ورک کا مسئلہ ہے۔ اپنا انٹرنیٹ چیک کریں۔", ae_generic:"کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔", ae_needEmailPw:"براہ کرم اپنی ای میل اور پاس ورڈ لکھیں۔", ae_fillAll:"براہ کرم ہر خانہ بھریں۔", ae_pwMismatch:"پاس ورڈ آپس میں نہیں ملتے۔", ae_needEmail:"براہ کرم اپنی ای میل لکھیں۔", ae_resetSent:"ری سیٹ لنک بھیج دیا گیا ہے — اپنا ان باکس اور اسپیم فولڈر دیکھیں۔", ae_linkExpired:"یہ ری سیٹ لنک درست نہیں یا اس کی مدت ختم ہو چکی ہے۔ براہ کرم نیا لنک منگوائیں۔", ae_fillBoth:"براہ کرم دونوں خانے بھریں۔", ae_pwUpdated:"پاس ورڈ اپ ڈیٹ ہو گیا — براہ کرم لاگ اِن کریں۔",
     ver_title:"اپنی ای میل کی تصدیق کریں", ver_sub:"ہم نے {email} پر تصدیقی لنک بھیجا ہے۔ اسے کھولیں، پھر واپس آ کر جاری رکھیں دبائیں۔", ver_continue:"جاری رکھیں", ver_resend:"ای میل دوبارہ بھیجیں", ver_logout:"لاگ آؤٹ", ver_notYet:"آپ کی ای میل کی تصدیق ابھی نہیں ہوئی۔ ہمارا بھیجا ہوا لنک کھولیں، پھر دوبارہ جاری رکھیں دبائیں۔", ver_sent:"تصدیقی ای میل بھیج دی گئی ہے۔ براہ کرم اپنا اسپیم فولڈر بھی دیکھ لیں۔",
     feat_incomeSummary:"روزانہ اور ماہانہ آمدنی کا خلاصہ",
     feat_dataExport:"پیمائشیں اور آرڈرز ایکسپورٹ کریں (CSV)",
@@ -2372,7 +2413,7 @@ const APP_STR = {
     banner_expired:"آپ کی پریمیم سبسکرپشن ختم ہو چکی ہے۔ پریمیم فیچرز بند ہیں — جاری رکھنے کے لیے دوبارہ سبسکرائب کریں۔",
     banner_renew:"ری نیو کریں", pr_validTill:"تاریخ ختم",
     btn_ok:"ٹھیک ہے", msg_completeProfile:"پیمائش یا آرڈر شامل کرنے سے پہلے اپنی پروفائل مکمل کریں (شاپ نیم، ٹیلر نیم اور فون نمبر)۔",
-    msg_phoneAlreadyRegistered:"یہ فون نمبر پہلے سے ہی کسی دوسرے TailorHub اکاؤنٹ کے ساتھ رجسٹرڈ ہے۔ براہ کرم کوئی اور نمبر استعمال کریں۔"
+    msg_phoneAlreadyRegistered:"یہ فون نمبر پہلے سے رجسٹرڈ ہے۔ براہ کرم کوئی اور نمبر استعمال کریں۔"
   },
   ru:{
     hm_title:"Customer", hm_search:"Naam, serial no., ya phone se search karein",
@@ -2435,7 +2476,7 @@ const APP_STR = {
     feat_unlimitedEntries:"Unlimited measurements & orders",
     feat_unlimitedPins:"Unlimited pinned customers",
     feat_orderPhoto:"Kisi bhi order par photo lagayein",
-    auth_tagline:"Apni tailoring shop ek hi jagah sambhalein", auth_loginTitle:"Log In", auth_loginSub:"Jari rakhne ke liye apni email se log in karein", auth_email:"Email", auth_password:"Password", auth_forgot:"Password bhool gaye?", auth_loginBtn:"Log In", auth_noAccount:"Account nahi hai?", auth_signupLink:"Sign Up", auth_signupTitle:"Account Banayein", auth_signupSub:"Shuru karne ke liye apni email se sign up karein", auth_confirmPassword:"Password Dobara Likhein", pw_hint:"Kam az kam 6 huroof, harf aur number mila kar.", ae_pwRule:"Password mein harf aur number dono hone chahiye.", auth_country:"Mulk", auth_selectCountry:"Apna mulk chunein", ae_needCountry:"Barah-e-karam apna mulk chunein.", auth_signupBtn:"Account Banayein", auth_haveAccount:"Pehle se account hai?", auth_loginLink:"Log In", auth_forgotTitle:"Password Reset Karein", auth_forgotSub:"Apni email likhein, hum aap ko reset link bhej denge", auth_sendReset:"Reset Link Bhejein", auth_backToLogin:"Log In par Wapas Jayein", auth_resetTitle:"Naya Password Set Karein", auth_resetSub:"Apne account ke liye naya password chunein", auth_newPassword:"Naya Password", auth_resetBtn:"Password Update Karein", auth_blockedTitle:"Device Ki Hadd Poori Ho Gayi", auth_blockedSub:"Is account ke liye device login ki hadd poori ho chuki hai. Pehle apni kisi doosri device se log out karein, ya agar un devices tak rasai nahi hai to neeche se har jagah se log out kar sakte hain.", auth_blockedCancel:"Wapas Jayein", auth_blockedForce:"Meri Rasai Nahi Hai — Har Jagah Se Log Out Karein", ae_invalidEmail:"Ye email address durust nahi lag raha.", ae_disabled:"Ye account band kar diya gaya hai.", ae_noUser:"Is email se koi account nahi mila.", ae_wrongPw:"Password ghalat hai.", ae_badCred:"Email ya password ghalat hai.", ae_emailInUse:"Is email se pehle hi account bana hua hai.", ae_weakPw:"Password kam az kam 6 huroof ka hona chahiye.", ae_tooMany:"Bohat zyada koshishein ho gayin. Thori der intezar karein aur dobara koshish karein.", ae_network:"Network ka masla hai. Apna internet check karein.", ae_generic:"Kuch ghalat ho gaya. Barah-e-karam dobara koshish karein.", ae_needEmailPw:"Barah-e-karam apni email aur password likhein.", ae_fillAll:"Barah-e-karam har khana bharein.", ae_pwMismatch:"Password aapas mein nahi milte.", ae_needEmail:"Barah-e-karam apni email likhein.", ae_resetSent:"Reset link bhej diya gaya hai — apna inbox aur spam folder check karein.", ae_linkExpired:"Ye reset link durust nahi ya is ki muddat khatam ho chuki hai. Barah-e-karam naya link mangwayein.", ae_fillBoth:"Barah-e-karam dono khane bharein.", ae_pwUpdated:"Password update ho gaya — barah-e-karam log in karein.",
+    auth_tagline:"Apni tailoring shop ek hi jagah sambhalein", auth_loginTitle:"Log In", auth_loginSub:"Jari rakhne ke liye apni email se log in karein", auth_email:"Email", auth_password:"Password", auth_forgot:"Password bhool gaye?", auth_loginBtn:"Log In", auth_noAccount:"Account nahi hai?", auth_signupLink:"Sign Up", auth_signupTitle:"Account Banayein", auth_signupSub:"Shuru karne ke liye apni email se sign up karein", auth_confirmPassword:"Password Dobara Likhein", pw_hint:"Kam az kam 6 huroof, harf aur number mila kar.", ae_pwRule:"Password mein harf aur number dono hone chahiye.", auth_country:"Mulk", auth_selectCountry:"Apna mulk chunein", ae_needCountry:"Barah-e-karam apna mulk chunein.", auth_signupBtn:"Account Banayein", auth_haveAccount:"Pehle se account hai?", auth_loginLink:"Log In", auth_forgotTitle:"Password Reset Karein", auth_forgotSub:"Apni email likhein, hum aap ko reset link bhej denge", auth_sendReset:"Reset Link Bhejein", auth_backToLogin:"Log In par Wapas Jayein", auth_resetTitle:"Naya Password Set Karein", auth_resetSub:"Apne account ke liye naya password chunein", auth_newPassword:"Naya Password", auth_resetBtn:"Password Update Karein", auth_blockedTitle:"Device Ki Hadd Poori Ho Gayi", auth_blockedSub:"Is account ke liye device login ki hadd poori ho chuki hai. Pehle apni kisi doosri device se log out karein, ya agar un devices tak rasai nahi hai to neeche se har jagah se log out kar sakte hain.", auth_blockedCancel:"Wapas Jayein", auth_blockedForce:"Meri Rasai Nahi Hai — Har Jagah Se Log Out Karein", ae_invalidEmail:"Ye email address durust nahi lag raha.", ae_disabled:"Ye account band kar diya gaya hai.", ae_noUser:"Is email se koi account nahi mila.", ae_wrongPw:"Password ghalat hai.", ae_badCred:"Email ya password ghalat hai.", ae_emailInUse:"Ye email pehle se registered hai. Barah-e-karam Log In karein.", ae_weakPw:"Password kam az kam 6 huroof ka hona chahiye.", ae_tooMany:"Bohat zyada koshishein ho gayin. Thori der intezar karein aur dobara koshish karein.", ae_network:"Network ka masla hai. Apna internet check karein.", ae_generic:"Kuch ghalat ho gaya. Barah-e-karam dobara koshish karein.", ae_needEmailPw:"Barah-e-karam apni email aur password likhein.", ae_fillAll:"Barah-e-karam har khana bharein.", ae_pwMismatch:"Password aapas mein nahi milte.", ae_needEmail:"Barah-e-karam apni email likhein.", ae_resetSent:"Reset link bhej diya gaya hai — apna inbox aur spam folder check karein.", ae_linkExpired:"Ye reset link durust nahi ya is ki muddat khatam ho chuki hai. Barah-e-karam naya link mangwayein.", ae_fillBoth:"Barah-e-karam dono khane bharein.", ae_pwUpdated:"Password update ho gaya — barah-e-karam log in karein.",
     ver_title:"Apni email verify karein", ver_sub:"Humne {email} par verification link bheja hai. Usay kholein, phir wapas aa kar Jari Rakhein dabayein.", ver_continue:"Jari Rakhein", ver_resend:"Email dobara bhejein", ver_logout:"Log Out", ver_notYet:"Aap ki email abhi verify nahi hui. Humara bheja hua link kholein, phir dobara Jari Rakhein dabayein.", ver_sent:"Verification email bhej di gayi hai. Barah-e-karam Spam folder bhi check kar lein.",
     feat_incomeSummary:"Daily aur monthly income summary",
     feat_dataExport:"Measurements aur orders export karein (CSV)",
@@ -2456,7 +2497,7 @@ const APP_STR = {
     banner_expired:"Aap ki Premium subscription expire ho chuki hai. Premium features lock hain — jari rakhne ke liye dubara subscribe karein.",
     banner_renew:"Renew Karein", pr_validTill:"Valid Till",
     btn_ok:"Theek Hai", msg_completeProfile:"Measurement ya order add karne se pehle apni profile complete karein (shop name, tailor name aur phone number).",
-    msg_phoneAlreadyRegistered:"Ye phone number pehle se kisi aur TailorHub account ke sath registered hai. Barah-e-karam koi aur number use karein."
+    msg_phoneAlreadyRegistered:"Ye number pehle se registered hai. Barah-e-karam koi aur number use karein."
   }
 };
 function T(key){
@@ -3986,7 +4027,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       st_devices:"Logged-in Devices", st_hdevices:"Log out a device below if you need to sign in on a new one.",
       st_logout:"Log Out (this device)", st_version:"App Version", st_backup:"Data Backup", st_backupVal:"Cloud (Firebase)", st_delete:"Delete Account",
       st_logoutConfirm:"Are you sure you want to log out?",
-      st_deleteConfirm:"This will permanently delete your account and all your data (measurements, orders, payments, profile). This cannot be undone. Continue?",
+      st_deleteConfirm:"This will permanently delete all your data (measurements, orders, payments, profile). Your email and phone number stay registered, so a new account cannot be made with them. This cannot be undone. Continue?", st_pwPrompt:"Enter your password to confirm account deletion.", st_premWarn:"You have an active Premium plan. Deleting your data does not cancel your Google Play subscription \u2014 please cancel it in Play Store > Subscriptions first, otherwise you will keep being charged. Continue anyway?",
       st_deleteConfirm2:"Are you absolutely sure? This is your last chance to cancel.", inc_title:"Income Summary", inc_hint:"Based on payments recorded against each order's Order Date.", inc_collToday:"Collected Today", inc_billToday:"Billed Today", inc_collMonth:"Collected This Month", inc_billMonth:"Billed This Month", inc_bookToday:"Booked Today", inc_delivToday:"Delivered Today", inc_bookMonth:"Booked This Month", inc_delivMonth:"Delivered This Month", inc_monthly:"Monthly Record", mr_title:"Monthly Record", mr_close:"Close", mr_empty:"No orders yet. Your monthly record will appear here.", mr_booked:"Booked", mr_delivered:"Delivered", suit1:"suit", suitN:"suits", cap_title:"Daily Suit Capacity", cap_hint:"Set how many suits you can realistically deliver in one day. You'll get a heads-up if a new order's delivery date already has too many suits due.", cap_save:"Save Capacity", cap_ph:"", exp_title:"Export Data", exp_hint:"Download a copy of your data as a spreadsheet file — handy for sharing with an accountant.", exp_meas:"Export Measurements (CSV)", exp_orders:"Export Orders (CSV)", use_meas:"Measurements Used", use_orders:"Orders Used" },
     ur:{ title:"پروفائل", shopinfo:"دکان کی معلومات", shopname:"دکان کا نام", tailorname:"درزی کا نام", ownPhone:"فون نمبر", hownPhone:"پیمائش یا آرڈر شامل کرنے سے پہلے دکان کا نام، درزی کا نام اور فون نمبر — تینوں پُر کرنا ضروری ہے۔",
       unit:"پیمائش کی اکائی", hunit:"یہ کبھی بھی تبدیل ہو سکتا ہے — پیمائش ٹیب یہی بطور ڈیفالٹ استعمال کرے گا۔",
@@ -4005,7 +4046,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       st_devices:"لاگ ان ڈیوائسز", st_hdevices:"اگر کسی نئی ڈیوائس پر لاگ ان کرنا ہو تو نیچے سے کوئی ڈیوائس لاگ آؤٹ کریں۔",
       st_logout:"لاگ آؤٹ (اس ڈیوائس سے)", st_version:"ایپ ورژن", st_backup:"ڈیٹا بیک اپ", st_backupVal:"کلاؤڈ (Firebase)", st_delete:"اکاؤنٹ حذف کریں",
       st_logoutConfirm:"کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟",
-      st_deleteConfirm:"یہ آپ کا اکاؤنٹ اور تمام ڈیٹا (پیمائشیں، آرڈرز، ادائیگیاں، پروفائل) مستقل طور پر حذف کر دے گا۔ اسے واپس نہیں کیا جا سکتا۔ جاری رکھیں؟",
+      st_deleteConfirm:"یہ آپ کا تمام ڈیٹا (پیمائشیں، آرڈرز، ادائیگیاں، پروفائل) مستقل طور پر حذف کر دے گا۔ آپ کی ای میل اور فون نمبر رجسٹرڈ رہیں گے، اس لیے ان سے نیا اکاؤنٹ نہیں بن سکے گا۔ اسے واپس نہیں کیا جا سکتا۔ جاری رکھیں؟", st_pwPrompt:"اکاؤنٹ حذف کرنے کی تصدیق کے لیے اپنا پاس ورڈ لکھیں۔", st_premWarn:"آپ کا پریمیم پلان فعال ہے۔ ڈیٹا حذف کرنے سے آپ کی گوگل پلے سبسکرپشن منسوخ نہیں ہوتی \u2014 پہلے پلے اسٹور > سبسکرپشنز میں جا کر اسے منسوخ کریں، ورنہ رقم کٹتی رہے گی۔ پھر بھی جاری رکھیں؟",
       st_deleteConfirm2:"کیا آپ کو مکمل یقین ہے؟ منسوخ کرنے کا یہ آخری موقع ہے۔", inc_title:"آمدنی کا خلاصہ", inc_hint:"ہر آرڈر کی آرڈر تاریخ کے مطابق درج ادائیگیوں پر مبنی۔", inc_collToday:"آج وصول", inc_billToday:"آج کا بل", inc_collMonth:"اس ماہ وصول", inc_billMonth:"اس ماہ کا بل", inc_bookToday:"آج بک ہوئے", inc_delivToday:"آج ڈیلیور ہوئے", inc_bookMonth:"اس ماہ بک ہوئے", inc_delivMonth:"اس ماہ ڈیلیور ہوئے", inc_monthly:"ماہانہ ریکارڈ", mr_title:"ماہانہ ریکارڈ", mr_close:"بند کریں", mr_empty:"ابھی کوئی آرڈر نہیں۔ آپ کا ماہانہ ریکارڈ یہاں نظر آئے گا۔", mr_booked:"بک", mr_delivered:"ڈیلیور", suit1:"سوٹ", suitN:"سوٹ", cap_title:"روزانہ سوٹ کی گنجائش", cap_hint:"بتائیں کہ آپ ایک دن میں حقیقت پسندانہ طور پر کتنے سوٹ ڈیلیور کر سکتے ہیں۔ اگر کسی نئے آرڈر کی ڈیلیوری تاریخ پر پہلے ہی بہت زیادہ سوٹ واجب الادا ہوں تو آپ کو خبردار کیا جائے گا۔", cap_save:"گنجائش محفوظ کریں", cap_ph:"", exp_title:"ڈیٹا ایکسپورٹ", exp_hint:"اپنے ڈیٹا کی کاپی اسپریڈشیٹ فائل کی شکل میں ڈاؤن لوڈ کریں — اکاؤنٹنٹ کو بھیجنے کے لیے مفید۔", exp_meas:"پیمائشیں ایکسپورٹ کریں (CSV)", exp_orders:"آرڈرز ایکسپورٹ کریں (CSV)", use_meas:"استعمال شدہ پیمائشیں", use_orders:"استعمال شدہ آرڈرز" },
     ru:{ title:"Profile", shopinfo:"Shop Info", shopname:"Shop ka Naam", tailorname:"Tailor ka Naam", ownPhone:"Phone Number", hownPhone:"Measurement ya order add karne se pehle shop name, tailor name aur phone number — teeno bharna zaroori hai.",
       unit:"Measurement Unit", hunit:"Ye kabhi bhi badal sakte hain — Measurement tab yehi default use karega.",
@@ -4024,7 +4065,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       st_devices:"Logged-in Devices", st_hdevices:"Agar kisi nayi device pe login karna ho to neeche se koi device logout kar dein.",
       st_logout:"Log Out (is device se)", st_version:"App Version", st_backup:"Data Backup", st_backupVal:"Cloud (Firebase)", st_delete:"Account Delete Karein",
       st_logoutConfirm:"Kya aap waqai log out karna chahte hain?",
-      st_deleteConfirm:"Ye aap ka account aur tamam data (measurements, orders, payments, profile) hamesha ke liye delete kar dega. Ye wapas nahi ho sakta. Jari rakhein?",
+      st_deleteConfirm:"Ye aap ka tamam data (measurements, orders, payments, profile) hamesha ke liye delete kar dega. Aap ki email aur phone number registered rahenge, is liye un se naya account nahi ban sakega. Ye wapas nahi ho sakta. Jari rakhein?", st_pwPrompt:"Account delete karne ki tasdeeq ke liye apna password likhein.", st_premWarn:"Aap ka Premium plan active hai. Data delete karne se Google Play subscription cancel nahi hoti \u2014 pehle Play Store > Subscriptions mein ja kar cancel karein, warna paisa katta rahega. Phir bhi jari rakhein?",
       st_deleteConfirm2:"Kya aap ko poora yaqeen hai? Cancel karne ka ye aakhri mauka hai.", inc_title:"Aamdani ka Khulasa", inc_hint:"Har order ki Order Date ke mutabiq darj payments par mabni.", inc_collToday:"Aaj Wasool", inc_billToday:"Aaj ka Bill", inc_collMonth:"Is Mahine Wasool", inc_billMonth:"Is Mahine ka Bill", inc_bookToday:"Aaj Book hue", inc_delivToday:"Aaj Deliver hue", inc_bookMonth:"Is Mahine Book hue", inc_delivMonth:"Is Mahine Deliver hue", inc_monthly:"Mahana Record", mr_title:"Mahana Record", mr_close:"Band Karein", mr_empty:"Abhi koi order nahi. Aap ka mahana record yahan nazar aayega.", mr_booked:"Book", mr_delivered:"Deliver", suit1:"suit", suitN:"suits", cap_title:"Rozana Suit ki Gunjaish", cap_hint:"Batayein ke aap aik din mein haqeeqat mein kitne suit deliver kar sakte hain. Agar kisi naye order ki delivery date par pehle hi bohat se suit due hon to aap ko khabardar kiya jayega.", cap_save:"Gunjaish Save Karein", cap_ph:"", exp_title:"Data Export", exp_hint:"Apne data ki copy spreadsheet file ki shakal mein download karein — accountant ko bhejne ke liye mufeed.", exp_meas:"Measurements Export Karein (CSV)", exp_orders:"Orders Export Karein (CSV)", use_meas:"Istemal shuda Measurements", use_orders:"Istemal shuda Orders" }
   };
   function PT(key){
@@ -4056,10 +4097,6 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     root.querySelector('#pr_t_account').textContent = t.account;
     root.querySelector('#pr_l_phone').textContent = t.phone;
     root.querySelector('#pr_t_contact').textContent = t.contact;
-    root.querySelector('#pr_l_contactEmail').textContent = t.contactEmail;
-    root.querySelector('#pr_l_contactWa').textContent = t.contactWa;
-    root.querySelector('#pr_contactEmailVal').textContent = t.contactEmailBtn;
-    root.querySelector('#pr_contactWaVal').textContent = t.contactWaBtn;
     root.querySelector('#pr_btnSave').textContent = t.save;
     root.querySelector('#st_title').textContent = t.st_title;
     root.querySelector('#st_t_password').textContent = t.st_password;
@@ -4395,40 +4432,34 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     await auth.signOut();
   });
 
-  /* ===== Delete account (Firestore data + Auth account + local cache) ===== */
+  /* ===== Delete account =====
+     Wipes the tailor's data (measurements, orders, devices, profile) but KEEPS the sign-in email,
+     the phone number in phoneRegistry and the free-usage counters, so deleting + re-signing up
+     can't be used to get another free 100/100. Logging in again with the same email = empty account. */
   root.querySelector('#st_btnDeleteAccount').addEventListener('click', async ()=>{
-    if(!(await customConfirm(PT('st_deleteConfirm'), T('btn_deleteConfirmOk'), T('btn_cancel'), true))) return;
-    if(!(await customConfirm(PT('st_deleteConfirm2'), T('btn_deleteConfirmOk'), T('btn_cancel'), true))) return;
     const user = auth.currentUser;
     if(!user) return;
+    if(isPremium() && getSubPlanType()){
+      if(!(await customConfirm(PT('st_premWarn'), T('btn_ok'), T('btn_cancel')))) return;
+    }
+    if(!(await customConfirm(PT('st_deleteConfirm'), T('btn_deleteConfirmOk'), T('btn_cancel'), true))) return;
+    const pw = await customPasswordPrompt(PT('st_pwPrompt'), T('btn_deleteConfirmOk'), T('btn_cancel'));
+    if(pw === null) return;
     try{
-      /* Step 1: fresh re-authentication FIRST, so user.delete() at the end can't
-         fail with requires-recent-login after data is already gone. */
-      const _pw = window.prompt('Account delete karne ke liye apna password likhein / Enter your password to delete account');
-      if(_pw === null) return;
-      const _cred = firebase.auth.EmailAuthProvider.credential(user.email, _pw);
-      await user.reauthenticateWithCredential(_cred);
-      /* Step 2: release this account's phone number from the registry */
-      const _ownPhone = normalizePhone((loadProfile() || {}).ownPhone);
-      if(_ownPhone){
-        try{
-          const _pd = await db.collection('phoneRegistry').doc(_ownPhone).get();
-          if(_pd.exists && (_pd.data() || {}).uid === user.uid){ await _pd.ref.delete(); }
-        }catch(_e){ console.warn('phone registry cleanup failed:', _e); }
-      }
+      const cred = firebase.auth.EmailAuthProvider.credential(user.email, pw);
+      await user.reauthenticateWithCredential(cred);
+      if(ownDeviceUnsub){ ownDeviceUnsub(); ownDeviceUnsub = null; }
+      if(deviceListUnsub){ deviceListUnsub(); deviceListUnsub = null; }
+      const country = (loadProfile() || {}).country || 'PK';
       const devicesSnap = await db.collection('users').doc(user.uid).collection('devices').get();
       const batch = db.batch();
       devicesSnap.forEach(d => batch.delete(d.ref));
-      batch.delete(db.collection('users').doc(user.uid));
+      batch.set(db.collection('users').doc(user.uid), { measurements: [], orders: [], profile: { country: country } }, { merge: true });
       await batch.commit();
       localStorage.removeItem(MEAS_KEY);
       localStorage.removeItem(ORDERS_KEY);
       localStorage.removeItem(PROFILE_KEY);
-      /* DEVICE_ID_KEY is intentionally NOT removed here — it must persist
-         across account deletion so a new account on this same device
-         starts from this device's existing free-trial usage floor,
-         instead of getting a fresh 100/100. */
-      await user.delete();
+      await auth.signOut();
     }catch(e){
       await customAlert(friendlyAuthError(e));
     }
