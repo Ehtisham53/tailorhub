@@ -2044,7 +2044,10 @@ async function reconcilePlayPurchases(){
       const expiry = getSubExpiryMs();
       const now = Date.now();
       if(expiry && expiry <= now + 24 * 60 * 60 * 1000){
-        const newExpiry = addMonths(Math.max(expiry, now), livePlan.months);
+        /* step forward from the OLD expiry in whole plan-periods (like Play's own renewals),
+           until it is past "now" — so opening the app late doesn't give free extra days */
+        let newExpiry = expiry, guard = 0;
+        do { newExpiry = addMonths(newExpiry, livePlan.months); guard++; } while(newExpiry <= now && guard < 60);
         await userDocRef.set({
           plan: 'premium',
           planExpiry: firebase.firestore.Timestamp.fromMillis(newExpiry),
@@ -4399,6 +4402,20 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     const user = auth.currentUser;
     if(!user) return;
     try{
+      /* Step 1: fresh re-authentication FIRST, so user.delete() at the end can't
+         fail with requires-recent-login after data is already gone. */
+      const _pw = window.prompt('Account delete karne ke liye apna password likhein / Enter your password to delete account');
+      if(_pw === null) return;
+      const _cred = firebase.auth.EmailAuthProvider.credential(user.email, _pw);
+      await user.reauthenticateWithCredential(_cred);
+      /* Step 2: release this account's phone number from the registry */
+      const _ownPhone = normalizePhone((loadProfile() || {}).ownPhone);
+      if(_ownPhone){
+        try{
+          const _pd = await db.collection('phoneRegistry').doc(_ownPhone).get();
+          if(_pd.exists && (_pd.data() || {}).uid === user.uid){ await _pd.ref.delete(); }
+        }catch(_e){ console.warn('phone registry cleanup failed:', _e); }
+      }
       const devicesSnap = await db.collection('users').doc(user.uid).collection('devices').get();
       const batch = db.batch();
       devicesSnap.forEach(d => batch.delete(d.ref));
