@@ -1,5 +1,5 @@
 /* TailorHub service worker - offline support. Bump VERSION when you want to force a cache refresh. */
-const VERSION = 'th-v18';
+const VERSION = 'th-v19';
 const CORE = 'th-core-' + VERSION;
 const LIBS = 'th-libs-' + VERSION;
 
