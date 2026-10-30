@@ -951,9 +951,21 @@
         <span id="pr_l_plan">Current Plan</span>
         <span class="sub-badge free" id="pr_planBadge">Free</span>
       </div>
+      <div class="meta-row" id="pr_planDurRow" style="display:none;">
+        <span id="pr_l_planDur">Plan Duration</span>
+        <span class="val" id="pr_planDurVal">-</span>
+      </div>
+      <div class="meta-row" id="pr_startRow" style="display:none;">
+        <span id="pr_l_start">Start Date</span>
+        <span class="val" id="pr_startVal">-</span>
+      </div>
       <div class="meta-row" id="pr_validTillRow" style="display:none;">
         <span id="pr_l_validTill">Valid Till</span>
         <span class="val" id="pr_validTillVal">-</span>
+      </div>
+      <div class="meta-row" id="pr_leftRow" style="display:none;">
+        <span id="pr_l_left">Time Left</span>
+        <span class="val" id="pr_leftVal">-</span>
       </div>
       <div class="meta-row" id="pr_measRow">
         <span id="pr_l_measUsage">Measurements Used</span>
@@ -1285,7 +1297,9 @@ function startUserDocSync(uid){
     localStorage.setItem(PROFILE_KEY, JSON.stringify(mergedProfile));
     localStorage.setItem(MEAS_COUNT_KEY, String(data.measLifetimeCount || 0));
     localStorage.setItem(ORDER_COUNT_KEY, String(data.orderLifetimeCount || 0));
-    localStorage.setItem(SUB_EXPIRY_KEY, (data.planExpiry && data.planExpiry.toMillis) ? String(data.planExpiry.toMillis()) : '');
+    const _expMs = toMsAny(data.planExpiry), _startMs = toMsAny(data.planStart);
+    localStorage.setItem(SUB_EXPIRY_KEY, _expMs ? String(_expMs) : '');
+    localStorage.setItem(SUB_START_KEY, _startMs ? String(_startMs) : '');
     localStorage.setItem(SUB_TYPE_KEY, data.planType || '');
     refreshCurrentView();
     if(!playReconcileDone){ playReconcileDone = true; reconcilePlayPurchases(); }
@@ -1792,7 +1806,7 @@ const APP_URL = '';
    country code, e.g. "923001234567" — no +, no spaces, no dashes).
    Leave it as an empty string '' to hide the WhatsApp support option
    until you have a number ready. */
-const SUPPORT_WHATSAPP_NUMBER = '';
+const SUPPORT_WHATSAPP_NUMBER = '923242450031';
 
 const MEAS_KEY = 'tailorhub_measurements';
 const ORDERS_KEY = 'tailorhub_orders';
@@ -1975,6 +1989,17 @@ const SUB_EXPIRY_KEY = 'tailorhub_sub_expiry';
 const SUB_TYPE_KEY = 'tailorhub_sub_type';
 const SUB_GRACE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (matches Play grace period)
 function getSubExpiryMs(){ const v = Number(localStorage.getItem(SUB_EXPIRY_KEY)); return v || null; }
+const SUB_START_KEY = 'tailorhub_sub_start';
+function getSubStartMs(){ const v = Number(localStorage.getItem(SUB_START_KEY)); return v || null; }
+/* planExpiry / planStart can be a Firestore Timestamp (set by the app) OR a plain number in
+   milliseconds (typed by hand in Firebase Console) — both must work. */
+function toMsAny(v){
+  if(!v) return null;
+  if(typeof v.toMillis === 'function') return v.toMillis();
+  if(typeof v === 'number') return v;
+  if(typeof v === 'string' && /^\d+$/.test(v)) return Number(v);
+  return null;
+}
 function getSubPlanType(){ return localStorage.getItem(SUB_TYPE_KEY) || ''; }
 function getSubscriptionInfo(){
   const profile = loadProfile();
@@ -2016,7 +2041,7 @@ const FREE_MAX_DEVICES = 1;
 function deviceLimitForUserData(d){
   d = d || {};
   if(d.plan !== 'premium') return FREE_MAX_DEVICES;
-  const exp = (d.planExpiry && d.planExpiry.toMillis) ? d.planExpiry.toMillis() : null;
+  const exp = toMsAny(d.planExpiry);
   if(exp && Date.now() > exp + SUB_GRACE_MS) return FREE_MAX_DEVICES;
   const plan = SUB_PLANS.find(x => x.id === d.planType);
   return plan ? plan.maxDevices : 2;
@@ -2218,7 +2243,8 @@ function renderSubBanner(){
   if(info.status === 'grace'){
     el.className = 'sub-banner warn';
     el.style.display = 'block';
-    el.innerHTML = T('banner_grace') + ' <button id="subBannerRenewBtn">' + T('banner_renew') + '</button>';
+    const _graceDays = Math.max(1, Math.ceil((info.expiryMs + SUB_GRACE_MS - Date.now()) / 86400000));
+    el.innerHTML = T('banner_grace').replace('{x}', _graceDays) + ' <button id="subBannerRenewBtn">' + T('banner_renew') + '</button>';
   } else if(info.status === 'expired'){
     el.className = 'sub-banner danger';
     el.style.display = 'block';
@@ -2325,9 +2351,9 @@ const APP_STR = {
     up_skuNotReady:"This plan isn't set up on the Play Store yet. Please try again later.",
     up_playOnly:"Premium purchase is not available here right now. Please try again later.",
     up_comingSoon:"Coming soon",
-    banner_grace:"Your subscription expired today. 1 day left before Premium features lock.",
+    banner_grace:"Your subscription has expired. Premium features will lock in {x} day(s).",
     banner_expired:"Your Premium subscription has expired. Premium features are locked — resubscribe to continue.",
-    banner_renew:"Renew", pr_validTill:"Valid Till",
+    banner_renew:"Renew", pr_validTill:"Valid Till", sub_planDur:"Plan Duration", sub_startDate:"Start Date", sub_timeLeft:"Time Left", sub_daysLeft:"{x} days left", sub_dayLeft1:"1 day left", sub_graceLeft:"Expired — {x} grace day(s) left", sub_expired:"Expired",
     btn_ok:"OK", msg_completeProfile:"Please complete your profile (shop name, tailor name and phone number) before adding measurements or orders.",
     msg_phoneAlreadyRegistered:"This phone number is already registered. Please use a different number."
   },
@@ -2409,9 +2435,9 @@ const APP_STR = {
     up_skuNotReady:"یہ پلان ابھی Play Store پر سیٹ نہیں ہوا۔ بعد میں دوبارہ کوشش کریں۔",
     up_playOnly:"پریمیم کی خریداری ابھی یہاں دستیاب نہیں ہے۔ بعد میں دوبارہ کوشش کریں۔",
     up_comingSoon:"جلد آ رہا ہے",
-    banner_grace:"آپ کی سبسکرپشن آج ختم ہو چکی ہے۔ پریمیم فیچرز بند ہونے میں 1 دن باقی ہے۔",
+    banner_grace:"آپ کی سبسکرپشن ختم ہو چکی ہے۔ پریمیم فیچرز {x} دن میں بند ہو جائیں گے۔",
     banner_expired:"آپ کی پریمیم سبسکرپشن ختم ہو چکی ہے۔ پریمیم فیچرز بند ہیں — جاری رکھنے کے لیے دوبارہ سبسکرائب کریں۔",
-    banner_renew:"ری نیو کریں", pr_validTill:"تاریخ ختم",
+    banner_renew:"ری نیو کریں", pr_validTill:"تاریخ ختم", sub_planDur:"پلان کی مدت", sub_startDate:"شروع کی تاریخ", sub_timeLeft:"باقی وقت", sub_daysLeft:"{x} دن باقی", sub_dayLeft1:"1 دن باقی", sub_graceLeft:"ختم — {x} دن کی رعایت باقی", sub_expired:"ختم",
     btn_ok:"ٹھیک ہے", msg_completeProfile:"پیمائش یا آرڈر شامل کرنے سے پہلے اپنی پروفائل مکمل کریں (شاپ نیم، ٹیلر نیم اور فون نمبر)۔",
     msg_phoneAlreadyRegistered:"یہ فون نمبر پہلے سے رجسٹرڈ ہے۔ براہ کرم کوئی اور نمبر استعمال کریں۔"
   },
@@ -2493,9 +2519,9 @@ const APP_STR = {
     up_skuNotReady:"Ye plan abhi Play Store par set nahi hua. Baad mein dobara koshish karein.",
     up_playOnly:"Premium ki kharidari abhi yahan available nahi hai. Baad mein dobara koshish karein.",
     up_comingSoon:"Jald aa raha hai",
-    banner_grace:"Aap ki subscription aaj expire ho chuki hai. Premium features lock hone mein 1 din baqi hai.",
+    banner_grace:"Aap ki subscription expire ho chuki hai. Premium features {x} din mein lock ho jayenge.",
     banner_expired:"Aap ki Premium subscription expire ho chuki hai. Premium features lock hain — jari rakhne ke liye dubara subscribe karein.",
-    banner_renew:"Renew Karein", pr_validTill:"Valid Till",
+    banner_renew:"Renew Karein", pr_validTill:"Valid Till", sub_planDur:"Plan ki Muddat", sub_startDate:"Shuru ki Tareekh", sub_timeLeft:"Baqi Waqt", sub_daysLeft:"{x} din baqi", sub_dayLeft1:"1 din baqi", sub_graceLeft:"Expire — {x} din ki mohlat baqi", sub_expired:"Expire",
     btn_ok:"Theek Hai", msg_completeProfile:"Measurement ya order add karne se pehle apni profile complete karein (shop name, tailor name aur phone number).",
     msg_phoneAlreadyRegistered:"Ye number pehle se registered hai. Barah-e-karam koi aur number use karein."
   }
@@ -4132,8 +4158,45 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     const orderRow = root.querySelector('#pr_orderRow');
     const validTillRow = root.querySelector('#pr_validTillRow');
     const validTillVal = root.querySelector('#pr_validTillVal');
+    const durRow = root.querySelector('#pr_planDurRow');
+    const startRow = root.querySelector('#pr_startRow');
+    const leftRow = root.querySelector('#pr_leftRow');
     const upgradeBtn = root.querySelector('#pr_btnUpgrade');
     const info = getSubscriptionInfo();
+
+    /* Start / Expires / Time Left card — only for plans that have an expiry date.
+       Accounts with NO expiry (lifetime) just show "Premium", nothing else. */
+    function showDates(){
+      const plan = SUB_PLANS.find(x => x.id === getSubPlanType());
+      root.querySelector('#pr_l_planDur').textContent = T('sub_planDur');
+      root.querySelector('#pr_l_start').textContent = T('sub_startDate');
+      root.querySelector('#pr_l_validTill').textContent = PT('validTill');
+      root.querySelector('#pr_l_left').textContent = T('sub_timeLeft');
+      if(plan){
+        const nameKey = plan.id === 'monthly' ? 'plan_monthly' : (plan.id === 'plan3' ? 'plan_3month' : 'plan_6month');
+        root.querySelector('#pr_planDurVal').textContent = T(nameKey);
+        durRow.style.display = 'flex';
+      } else { durRow.style.display = 'none'; }
+      let startMs = getSubStartMs();
+      if(!startMs && plan) startMs = addMonths(info.expiryMs, -plan.months);
+      if(startMs){ root.querySelector('#pr_startVal').textContent = fmtDate(startMs); startRow.style.display = 'flex'; }
+      else { startRow.style.display = 'none'; }
+      validTillVal.textContent = fmtDate(info.expiryMs);
+      validTillRow.style.display = 'flex';
+      const DAY = 86400000, now = Date.now();
+      let txt;
+      if(info.expiryMs > now){
+        const d = Math.ceil((info.expiryMs - now) / DAY);
+        txt = d === 1 ? T('sub_dayLeft1') : T('sub_daysLeft').replace('{x}', d);
+      } else if(info.status === 'grace'){
+        txt = T('sub_graceLeft').replace('{x}', Math.max(1, Math.ceil((info.expiryMs + SUB_GRACE_MS - now) / DAY)));
+      } else { txt = T('sub_expired'); }
+      root.querySelector('#pr_leftVal').textContent = txt;
+      leftRow.style.display = 'flex';
+    }
+    function hideDates(){
+      durRow.style.display = startRow.style.display = validTillRow.style.display = leftRow.style.display = 'none';
+    }
 
     if(info.active){
       badge.textContent = (info.status === 'grace') ? T('badge_premium') + ' ⚠' : T('badge_premium');
@@ -4141,18 +4204,17 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       measRow.style.display = 'none';
       orderRow.style.display = 'none';
       if(info.expiryMs){
-        validTillRow.style.display = 'flex';
-        validTillVal.textContent = fmtDate(info.expiryMs);
+        showDates();
         upgradeBtn.style.display = 'block';
         upgradeBtn.textContent = PT('extendBtn');
       } else {
-        validTillRow.style.display = 'none';
+        hideDates();
         upgradeBtn.style.display = 'none';
       }
     } else {
       badge.textContent = (info.status === 'expired') ? T('badge_premium') + ' (expired)' : 'Free';
       badge.className = 'sub-badge free';
-      validTillRow.style.display = 'none';
+      if(info.status === 'expired' && info.expiryMs) showDates(); else hideDates();
       measRow.style.display = 'flex';
       orderRow.style.display = 'flex';
       upgradeBtn.style.display = 'block';
