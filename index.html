@@ -2092,6 +2092,27 @@ function applyPurchasedPlan(plan, purchaseToken){
      (covers refund, cancel-after-period-end, expiry).
    - Any error / offline / no Digital Goods: nothing changes. */
 const PLAY_PURCHASE_FLAG_KEY = 'tailorhub_play_purchase_here';
+
+/* Google refunds any subscription purchase that is NOT acknowledged within 3 days.
+   Right after payment, listPurchases() may not show the new purchase yet, so we
+   retry a few times with a short wait. Returns the purchaseToken (or null). */
+async function acknowledgePlayPurchase(service, sku){
+  const waits = [0, 1500, 3000, 5000, 8000];
+  for(let i = 0; i < waits.length; i++){
+    if(waits[i]) await new Promise(r => setTimeout(r, waits[i]));
+    try{
+      const purchases = await service.listPurchases();
+      const match = (purchases || []).find(p => p.itemId === sku);
+      if(match && match.purchaseToken){
+        try{ await service.acknowledge(match.purchaseToken, 'onetime'); }
+        catch(ackErr){ console.warn('acknowledge call failed (maybe already acknowledged):', ackErr); }
+        return match.purchaseToken;
+      }
+    }catch(e){ console.warn('listPurchases retry failed:', e); }
+  }
+  return null;
+}
+
 async function reconcilePlayPurchases(){
   try{
     if(!window.getDigitalGoodsService || !userDocRef) return;
@@ -2103,6 +2124,13 @@ async function reconcilePlayPurchases(){
     const purchases = await service.listPurchases();
     const skus = SUB_PLANS.map(p => p.sku);
     const active = (purchases || []).filter(p => skus.indexOf(p.itemId) !== -1);
+    /* safety net: acknowledge every active purchase again (harmless if already done) */
+    for(const ap of active){
+      if(ap.purchaseToken){
+        try{ await service.acknowledge(ap.purchaseToken, 'onetime'); }
+        catch(_ackErr){ /* already acknowledged or temporary error — ignore */ }
+      }
+    }
     if(active.length){
       try{ localStorage.setItem(PLAY_PURCHASE_FLAG_KEY, '1'); }catch(_e){}
       const livePlan = SUB_PLANS.find(p => p.sku === active[0].itemId) || storedPlan;
@@ -2149,9 +2177,7 @@ async function startPurchase(plan){
       await payResponse.complete('success');
       let boughtToken = null;
       try{
-        const purchases = await service.listPurchases();
-        const match = purchases.find(p => p.itemId === plan.sku);
-        if(match && match.purchaseToken){ boughtToken = match.purchaseToken; await service.acknowledge(match.purchaseToken, 'onetime'); }
+        boughtToken = await acknowledgePlayPurchase(service, plan.sku);
       }catch(ackErr){ console.warn('acknowledge failed:', ackErr); }
       try{ localStorage.setItem(PLAY_PURCHASE_FLAG_KEY, '1'); }catch(_e){}
       applyPurchasedPlan(plan, boughtToken);
