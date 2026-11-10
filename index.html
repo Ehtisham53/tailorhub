@@ -123,7 +123,7 @@
   .invoice-head .shop{ font-size:13px; color:var(--ink-soft); }
   .invoice-no{ text-align:center; font-family:'Zilla Slab',serif; font-size:15px; color:var(--thread); font-weight:700; margin-bottom:18px; }
   .invoice-line{ display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  .invoice-line span:first-child{ color:var(--ink-soft); }
+  .invoice-line span:first-child{ color:var(--ink-soft); font-weight:600; }
   .invoice-line span:last-child{ font-weight:600; text-align:right; }
   /* Urdu script: mirror the rows — label on the right, value on the left */
   .inv-rtl .invoice-line{ direction:rtl; }
@@ -139,6 +139,7 @@
 
   /* sub-screen (form / detail) */
   .sub-screen{ padding:0 0 100px; }
+  #or_formScreen{ padding-bottom:160px; }
   .form-top{
     padding:14px 16px; background:var(--surface); border-bottom:1px solid var(--line);
     display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:5;
@@ -851,7 +852,9 @@
       <div class="section-title" data-i18n="sec_whatsapp">WhatsApp</div>
       <button class="wa-btn" id="or_waBtn" data-i18n="btn_sendWa">Send WhatsApp Message</button>
     </div>
-    <div class="save-bar">
+    <div class="save-bar" style="flex-wrap:wrap;">
+      <button class="btn-pdf" id="or_formSavePdfBtn" style="display:none;flex:1 1 calc(50% - 5px);" data-i18n="btn_savePdf">Save PDF</button>
+      <button class="btn-pdf" id="or_formSharePdfBtn" style="display:none;flex:1 1 calc(50% - 5px);" data-i18n="btn_sharePdf">Share PDF</button>
       <button class="btn-delete" id="or_deleteBtn" style="display:none;" data-i18n="btn_delete">Delete</button>
       <button class="btn-save" id="or_saveBtn" data-i18n="btn_saveOrder">Save Order</button>
     </div>
@@ -904,6 +907,11 @@
       <div class="field-row"><label id="pr_l_tailorname">Tailor Name</label><input type="text" id="pr_tailorName" placeholder=""></div>
       <div class="field-row"><label id="pr_l_ownPhone">Phone Number</label><input type="text" id="pr_ownPhone" inputmode="tel" placeholder=""></div>
       <p style="font-size:11.5px;color:var(--ink-soft);margin-top:-4px;" id="pr_h_ownPhone">Shop name, tailor name and phone number must all be filled in before you can add measurements or orders.</p>
+      <div style="border-top:1px dashed var(--line);margin:14px 0 12px;"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--thread);margin-bottom:8px;" id="pr_t_p2">Partner 2 (optional)</div>
+      <div class="field-row"><label id="pr_l_p2name">Partner 2 Name</label><input type="text" id="pr_partner2Name" placeholder=""></div>
+      <div class="field-row"><label id="pr_l_p2phone">Partner 2 Phone</label><input type="text" id="pr_partner2Phone" inputmode="tel" placeholder=""></div>
+      <p style="font-size:11.5px;color:var(--ink-soft);margin-top:-4px;" id="pr_h_p2">If two partners or brothers work in the shop, fill this in and both names and numbers will appear on slips. Leave empty if not needed.</p>
     </div>
 
     <div class="card">
@@ -2650,7 +2658,7 @@ async function generateAndSharePDF(e){
     const left = 48, right = pageW - 48, cx = pageW / 2;
     const colW = (right - left) / 2;
     let y = 64;
-    const paintBg = () => { doc.setFillColor(...BG); doc.rect(0, 0, pageW, pageH, 'F'); };
+    const paintBg = () => { doc.setFillColor(...BG); doc.rect(0, 0, pageW, pageH, 'F'); drawPdfWatermark(doc, pageW, pageH); };
     const ensure = (h) => { if(y + h > pageH - 56){ doc.addPage(); paintBg(); y = 56; } };
     const has = (v) => v !== null && v !== undefined && v !== '';
     const dashed = () => { doc.setDrawColor(...LINE); doc.setLineWidth(1.2); doc.setLineDashPattern([3,2], 0); doc.line(left, y, right, y); doc.setLineDashPattern([], 0); };
@@ -2659,11 +2667,7 @@ async function generateAndSharePDF(e){
     // header: shop name + tailor name • phone (same look as the invoice)
     doc.setFont('times','bold'); doc.setFontSize(20); doc.setTextColor(...INK);
     doc.text(profile.shopName || 'TailorHub', cx, y, { align:'center' }); y += 20;
-    const sub = `${profile.tailorName || ''}${profile.ownPhone ? ' \u2022 '+profile.ownPhone : ''}`;
-    if(sub.trim()){
-      doc.setFont('helvetica','normal'); doc.setFontSize(12); doc.setTextColor(...INK_SOFT);
-      doc.text(sub, cx, y, { align:'center' }); y += 18;
-    }
+    y = drawShopContacts(doc, profile, cx, y, INK_SOFT);
     y += 10; dashed(); y += 30;
 
     // title
@@ -2673,7 +2677,7 @@ async function generateAndSharePDF(e){
     // customer rows (label left, value right, thin line under each)
     const infoRow = (label, val) => {
       ensure(34);
-      doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(...INK_SOFT);
+      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...INK_SOFT);
       doc.text(String(label), left, y);
       doc.setFont('helvetica','bold'); doc.setTextColor(...INK);
       doc.text(String(val), right, y, { align:'right' });
@@ -2698,7 +2702,7 @@ async function generateAndSharePDF(e){
         for(let c = 0; c < 2; c++){
           const it = list[i + c]; if(!it) continue;
           const x = left + c * colW;
-          doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(...INK_SOFT);
+          doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(...INK_SOFT);
           doc.text(String(it[0]), x, y);
           doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(...INK);
           doc.text(String(it[1]), x, y + 18);
@@ -2803,6 +2807,69 @@ function compressImageFile(file, maxDimension, quality){
   });
 }
 
+/* Shop contact block for slips/invoices.
+   One person only  -> single centered line "Name • phone" (same as before).
+   Partner 2 filled -> two rows in aligned columns (names in one column, numbers in another, no bullet). */
+function shopContactRows(profile){
+  profile = profile || {};
+  const rows = [];
+  const add = (n, p) => { n = (n||'').trim(); p = (p||'').trim(); if(n || p) rows.push({ n: n, p: p }); };
+  add(profile.tailorName, profile.ownPhone);
+  add(profile.partner2Name, profile.partner2Phone);
+  return rows;
+}
+function drawShopContacts(doc, profile, cx, y, color){
+  const rows = shopContactRows(profile);
+  if(!rows.length) return y;
+  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(43,38,34);
+  if(rows.length === 1){
+    const r = rows[0];
+    doc.text(r.n && r.p ? (r.n + ' • ' + r.p) : (r.n || r.p), cx, y, { align:'center' });
+    return y + 18;
+  }
+  const gap = 18;
+  const nameW = Math.max(...rows.map(r => doc.getTextWidth(r.n)));
+  const phoneW = Math.max(...rows.map(r => doc.getTextWidth(r.p)));
+  const x0 = cx - (nameW + gap + phoneW) / 2;
+  rows.forEach(r => {
+    doc.text(r.n, x0, y);
+    doc.text(r.p, x0 + nameW + gap, y);
+    y += 18;
+  });
+  return y;
+}
+function shopContactHtml(profile){
+  const rows = shopContactRows(profile);
+  if(!rows.length) return '';
+  if(rows.length === 1){
+    const r = rows[0];
+    return '<span style="font-weight:700;color:var(--ink);">' + (r.n && r.p ? (r.n + ' • ' + r.p) : (r.n || r.p)) + '</span>';
+  }
+  return '<table style="margin:0 auto;border-collapse:collapse;font-size:inherit;color:var(--ink);font-weight:700;">' +
+    rows.map(r => '<tr><td style="text-align:left;padding:1px 16px 1px 0;">' + r.n + '</td><td style="text-align:left;padding:1px 0;">' + r.p + '</td></tr>').join('') +
+    '</table>';
+}
+
+/* Faint diagonal "TailorHub" watermark behind PDF content (drawn right after the cream background) */
+function drawPdfWatermark(doc, pageW, pageH){
+  try{
+    const text = 'TailorHub';
+    const angle = 35;
+    const rad = angle * Math.PI / 180;
+    doc.saveGraphicsState();
+    doc.setGState(new doc.GState({ opacity: 0.07 }));
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(84);
+    doc.setTextColor(43,38,34);
+    const w = doc.getTextWidth(text);
+    const cx = pageW / 2, cy = pageH / 2;
+    const x0 = cx - (w / 2) * Math.cos(rad);
+    const y0 = cy + (w / 2) * Math.sin(rad);
+    doc.text(text, x0, y0, { angle: angle });
+    doc.restoreGraphicsState();
+  }catch(e){ console.warn('watermark skipped:', e); }
+}
+
 /* Order invoice/receipt PDF — free tier, no share-count cap (matches free invoice generation policy)
    Styled to match the on-screen invoice preview: cream background, ink/thread/soft-gray palette,
    centered header, dashed separators, serif invoice number, bold total row. */
@@ -2819,17 +2886,14 @@ async function buildOrderInvoiceDoc(o, cust){
 
   // cream page background
   doc.setFillColor(...BG); doc.rect(0, 0, pageW, pageH, 'F');
+  drawPdfWatermark(doc, pageW, pageH);
 
   // header: shop name (centered, bold serif)
   doc.setFont('times','bold'); doc.setFontSize(20); doc.setTextColor(...INK);
   doc.text(profile.shopName || 'TailorHub', cx, y, { align:'center' }); y += 20;
 
   // subheader: tailor name • phone (centered, soft gray)
-  const sub = `${profile.tailorName || ''}${profile.ownPhone ? ' • '+profile.ownPhone : ''}`;
-  if(sub.trim()){
-    doc.setFont('helvetica','normal'); doc.setFontSize(12); doc.setTextColor(...INK_SOFT);
-    doc.text(sub, cx, y, { align:'center' }); y += 18;
-  }
+  y = drawShopContacts(doc, profile, cx, y, INK_SOFT);
   y += 10;
   doc.setDrawColor(...LINE); doc.setLineWidth(1.2); doc.setLineDashPattern([3,2], 0);
   doc.line(left, y, right, y); doc.setLineDashPattern([], 0);
@@ -2840,7 +2904,7 @@ async function buildOrderInvoiceDoc(o, cust){
   doc.text(fmtInvoiceNo(o.invoiceNo), cx, y, { align:'center' }); y += 28;
 
   function row(label, val){
-    doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(...INK_SOFT);
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...INK_SOFT);
     doc.text(String(label), left, y);
     doc.setFont('helvetica','bold'); doc.setTextColor(...INK);
     doc.text(val===null||val===undefined||val===''?'-':String(val), right, y, { align:'right' });
@@ -2849,7 +2913,7 @@ async function buildOrderInvoiceDoc(o, cust){
     y += 20;
   }
 
-  const balance = Math.max((o.totalAmount||0)-(o.advancePaid||0), 0);
+  const balance = o.balanceReceived ? 0 : Math.max((o.totalAmount||0)-(o.advancePaid||0), 0);
   row('Customer', cust ? cust.name : 'Customer deleted');
   row('Serial No.', cust ? pad(cust.sr) : '--');
   if(cust && cust.phone) row('Phone', cust.phone);
@@ -3490,6 +3554,8 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
   const backBtn = document.getElementById('or_backBtn');
   const saveBtn = document.getElementById('or_saveBtn');
   const deleteBtn = document.getElementById('or_deleteBtn');
+  const formSavePdfBtn = document.getElementById('or_formSavePdfBtn');
+  const formSharePdfBtn = document.getElementById('or_formSharePdfBtn');
   const formTitle = document.getElementById('or_formTitle');
   const customerPick = document.getElementById('or_customerPick');
   const customerPickLabel = document.getElementById('or_customerPickLabel');
@@ -3853,6 +3919,8 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       const cust = findCustomer(o.customerId);
       formTitle.textContent = T('title_editOrder');
       deleteBtn.style.display = 'block';
+      formSavePdfBtn.style.display = 'block';
+      formSharePdfBtn.style.display = 'block';
       selectedCustomerId = o.customerId;
       if(cust){
         customerPickLabel.textContent = `${cust.name} (Serial No. ${pad(cust.sr)})`;
@@ -3880,6 +3948,8 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       editingId = null;
       formTitle.textContent = T('title_newOrder');
       deleteBtn.style.display = 'none';
+      formSavePdfBtn.style.display = 'none';
+      formSharePdfBtn.style.display = 'none';
       selectOpt(root, 'orStatus', 'Pending');
       root.querySelector('#or_orderDate').value = todayStr();
       updateBalance();
@@ -4003,12 +4073,12 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     if(!o) return;
     const cust = findCustomer(o.customerId);
     const profile = loadProfile();
-    const balance = Math.max((o.totalAmount||0) - (o.advancePaid||0), 0);
+    const balance = o.balanceReceived ? 0 : Math.max((o.totalAmount||0) - (o.advancePaid||0), 0);
     invoiceBody.classList.toggle('inv-rtl', currentLang() === 'ur');
     invoiceBody.innerHTML = `
       <div class="invoice-head">
         <h2>${profile.shopName || 'TailorHub'}</h2>
-        <div class="shop">${profile.tailorName || ''}${profile.ownPhone ? ' • '+profile.ownPhone : ''}</div>
+        <div class="shop">${shopContactHtml(profile)}</div>
       </div>
       <div class="invoice-no">${fmtInvoiceNo(o.invoiceNo)}</div>
       <div class="invoice-line"><span>${T('lbl_customer')}</span><span>${cust ? cust.name : T('lbl_customerDeleted')}</span></div>
@@ -4045,6 +4115,15 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     const o = orders.find(x => x.id === invoiceOrderId);
     if(o) shareOrderInvoicePDF(o, findCustomer(o.customerId));
   });
+  /* PDF from the order edit form: always uses the last SAVED version of the order */
+  formSavePdfBtn.addEventListener('click', ()=>{
+    const o = orders.find(x => x.id === editingId);
+    if(o) saveOrderInvoicePDF(o, findCustomer(o.customerId));
+  });
+  formSharePdfBtn.addEventListener('click', ()=>{
+    const o = orders.find(x => x.id === editingId);
+    if(o) shareOrderInvoicePDF(o, findCustomer(o.customerId));
+  });
 
   window.TH_order = {
     render,
@@ -4062,7 +4141,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
   const toast = document.getElementById('pr_toast');
 
   const PR_STR = {
-    en:{ title:"Profile", shopinfo:"Shop Info", shopname:"Shop Name", tailorname:"Tailor Name", ownPhone:"Phone Number", hownPhone:"Shop name, tailor name and phone number must all be filled in before you can add measurements or orders.",
+    en:{ p2title:"Partner 2 (optional)", p2name:"Partner 2 Name", p2phone:"Partner 2 Phone", p2hint:"If two partners or brothers work in the shop, fill this in and both names and numbers will appear on slips. Leave empty if not needed.", title:"Profile", shopinfo:"Shop Info", shopname:"Shop Name", tailorname:"Tailor Name", ownPhone:"Phone Number", hownPhone:"Shop name, tailor name and phone number must all be filled in before you can add measurements or orders.",
       unit:"Measurement Unit", hunit:"You can change this anytime — the Measurement tab will use this as default.",
       lang:"App Language", hlang:"Applies to the whole app — Customer, Measurement, and Orders too.",
       wa:"WhatsApp Message", t1:"Order Ready Message",
@@ -4081,7 +4160,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       st_logoutConfirm:"Are you sure you want to log out?",
       st_deleteConfirm:"This will permanently delete all your data (measurements, orders, payments, profile). Your email and phone number stay registered, so a new account cannot be made with them. This cannot be undone. Continue?", st_pwPrompt:"Enter your password to confirm account deletion.", st_premWarn:"You have an active Premium plan. Deleting your data does not cancel your Google Play subscription \u2014 please cancel it in Play Store > Subscriptions first, otherwise you will keep being charged. Continue anyway?",
       st_deleteConfirm2:"Are you absolutely sure? This is your last chance to cancel.", inc_title:"Income Summary", inc_hint:"Based on payments recorded against each order's Order Date.", inc_collToday:"Collected Today", inc_billToday:"Billed Today", inc_collMonth:"Collected This Month", inc_billMonth:"Billed This Month", inc_bookToday:"Booked Today", inc_delivToday:"Delivered Today", inc_bookMonth:"Booked This Month", inc_delivMonth:"Delivered This Month", inc_monthly:"Monthly Record", mr_title:"Monthly Record", mr_close:"Close", mr_empty:"No orders yet. Your monthly record will appear here.", mr_booked:"Booked", mr_delivered:"Delivered", suit1:"suit", suitN:"suits", cap_title:"Daily Suit Capacity", cap_hint:"Set how many suits you can realistically deliver in one day. You'll get a heads-up if a new order's delivery date already has too many suits due.", cap_save:"Save Capacity", cap_ph:"", exp_title:"Export Data", exp_hint:"Download a copy of your data as a spreadsheet file — handy for sharing with an accountant.", exp_meas:"Export Measurements (CSV)", exp_orders:"Export Orders (CSV)", use_meas:"Measurements Used", use_orders:"Orders Used" },
-    ur:{ title:"پروفائل", shopinfo:"دکان کی معلومات", shopname:"دکان کا نام", tailorname:"درزی کا نام", ownPhone:"فون نمبر", hownPhone:"پیمائش یا آرڈر شامل کرنے سے پہلے دکان کا نام، درزی کا نام اور فون نمبر — تینوں پُر کرنا ضروری ہے۔",
+    ur:{ p2title:"پارٹنر 2 (اختیاری)", p2name:"پارٹنر 2 کا نام", p2phone:"پارٹنر 2 کا فون نمبر", p2hint:"اگر دکان پر دو بھائی یا پارٹنر کام کرتے ہیں تو یہ بھریں، سلپ پر دونوں کے نام اور نمبر آئیں گے۔ ضرورت نہ ہو تو خالی چھوڑ دیں۔", title:"پروفائل", shopinfo:"دکان کی معلومات", shopname:"دکان کا نام", tailorname:"درزی کا نام", ownPhone:"فون نمبر", hownPhone:"پیمائش یا آرڈر شامل کرنے سے پہلے دکان کا نام، درزی کا نام اور فون نمبر — تینوں پُر کرنا ضروری ہے۔",
       unit:"پیمائش کی اکائی", hunit:"یہ کبھی بھی تبدیل ہو سکتا ہے — پیمائش ٹیب یہی بطور ڈیفالٹ استعمال کرے گا۔",
       lang:"ایپ کی زبان", hlang:"یہ پوری ایپ پر لاگو ہوتا ہے — کسٹمر، پیمائش اور آرڈرز میں بھی۔",
       wa:"واٹس ایپ میسج", t1:"آرڈر تیار ہے کا پیغام",
@@ -4100,7 +4179,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       st_logoutConfirm:"کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟",
       st_deleteConfirm:"یہ آپ کا تمام ڈیٹا (پیمائشیں، آرڈرز، ادائیگیاں، پروفائل) مستقل طور پر حذف کر دے گا۔ آپ کی ای میل اور فون نمبر رجسٹرڈ رہیں گے، اس لیے ان سے نیا اکاؤنٹ نہیں بن سکے گا۔ اسے واپس نہیں کیا جا سکتا۔ جاری رکھیں؟", st_pwPrompt:"اکاؤنٹ حذف کرنے کی تصدیق کے لیے اپنا پاس ورڈ لکھیں۔", st_premWarn:"آپ کا پریمیم پلان فعال ہے۔ ڈیٹا حذف کرنے سے آپ کی گوگل پلے سبسکرپشن منسوخ نہیں ہوتی \u2014 پہلے پلے اسٹور > سبسکرپشنز میں جا کر اسے منسوخ کریں، ورنہ رقم کٹتی رہے گی۔ پھر بھی جاری رکھیں؟",
       st_deleteConfirm2:"کیا آپ کو مکمل یقین ہے؟ منسوخ کرنے کا یہ آخری موقع ہے۔", inc_title:"آمدنی کا خلاصہ", inc_hint:"ہر آرڈر کی آرڈر تاریخ کے مطابق درج ادائیگیوں پر مبنی۔", inc_collToday:"آج وصول", inc_billToday:"آج کا بل", inc_collMonth:"اس ماہ وصول", inc_billMonth:"اس ماہ کا بل", inc_bookToday:"آج بک ہوئے", inc_delivToday:"آج ڈیلیور ہوئے", inc_bookMonth:"اس ماہ بک ہوئے", inc_delivMonth:"اس ماہ ڈیلیور ہوئے", inc_monthly:"ماہانہ ریکارڈ", mr_title:"ماہانہ ریکارڈ", mr_close:"بند کریں", mr_empty:"ابھی کوئی آرڈر نہیں۔ آپ کا ماہانہ ریکارڈ یہاں نظر آئے گا۔", mr_booked:"بک", mr_delivered:"ڈیلیور", suit1:"سوٹ", suitN:"سوٹ", cap_title:"روزانہ سوٹ کی گنجائش", cap_hint:"بتائیں کہ آپ ایک دن میں حقیقت پسندانہ طور پر کتنے سوٹ ڈیلیور کر سکتے ہیں۔ اگر کسی نئے آرڈر کی ڈیلیوری تاریخ پر پہلے ہی بہت زیادہ سوٹ واجب الادا ہوں تو آپ کو خبردار کیا جائے گا۔", cap_save:"گنجائش محفوظ کریں", cap_ph:"", exp_title:"ڈیٹا ایکسپورٹ", exp_hint:"اپنے ڈیٹا کی کاپی اسپریڈشیٹ فائل کی شکل میں ڈاؤن لوڈ کریں — اکاؤنٹنٹ کو بھیجنے کے لیے مفید۔", exp_meas:"پیمائشیں ایکسپورٹ کریں (CSV)", exp_orders:"آرڈرز ایکسپورٹ کریں (CSV)", use_meas:"استعمال شدہ پیمائشیں", use_orders:"استعمال شدہ آرڈرز" },
-    ru:{ title:"Profile", shopinfo:"Shop Info", shopname:"Shop ka Naam", tailorname:"Tailor ka Naam", ownPhone:"Phone Number", hownPhone:"Measurement ya order add karne se pehle shop name, tailor name aur phone number — teeno bharna zaroori hai.",
+    ru:{ p2title:"Partner 2 (optional)", p2name:"Partner 2 ka Naam", p2phone:"Partner 2 ka Phone", p2hint:"Agar shop par do bhai ya partner kaam karte hain to ye bharein, slip par dono ke naam aur number aayenge. Zaroorat na ho to khali chhor dein.", title:"Profile", shopinfo:"Shop Info", shopname:"Shop ka Naam", tailorname:"Tailor ka Naam", ownPhone:"Phone Number", hownPhone:"Measurement ya order add karne se pehle shop name, tailor name aur phone number — teeno bharna zaroori hai.",
       unit:"Measurement Unit", hunit:"Ye kabhi bhi badal sakte hain — Measurement tab yehi default use karega.",
       lang:"App ki Zaban", hlang:"Ye poori app par lagu hota hai — Customer, Measurement aur Orders mein bhi.",
       wa:"WhatsApp Message", t1:"Order Ready ka Message",
@@ -4133,6 +4212,10 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     root.querySelector('#pr_l_tailorname').textContent = t.tailorname;
     root.querySelector('#pr_l_ownPhone').textContent = t.ownPhone;
     root.querySelector('#pr_h_ownPhone').textContent = t.hownPhone;
+    root.querySelector('#pr_t_p2').textContent = t.p2title;
+    root.querySelector('#pr_l_p2name').textContent = t.p2name;
+    root.querySelector('#pr_l_p2phone').textContent = t.p2phone;
+    root.querySelector('#pr_h_p2').textContent = t.p2hint;
     root.querySelector('#pr_t_unit').textContent = t.unit;
     root.querySelector('#pr_h_unit').textContent = t.hunit;
     root.querySelector('#pr_t_lang').textContent = t.lang;
@@ -4320,6 +4403,8 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     root.querySelector('#pr_tailorName').value = profile.tailorName || '';
     root.querySelector('#pr_tpl1').value = (profile.templates && profile.templates.orderReady) || '';
     root.querySelector('#pr_ownPhone').value = profile.ownPhone || '';
+    root.querySelector('#pr_partner2Name').value = profile.partner2Name || '';
+    root.querySelector('#pr_partner2Phone').value = profile.partner2Phone || '';
     root.querySelector('#pr_phoneNumber').value = (auth.currentUser && auth.currentUser.email) || profile.email || '';
     const waRow = root.querySelector('#pr_contactWaRow');
     const waLink = root.querySelector('#pr_contactWaVal');
@@ -4420,6 +4505,8 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     profile.shopName = root.querySelector('#pr_shopName').value.trim();
     profile.tailorName = root.querySelector('#pr_tailorName').value.trim();
     profile.ownPhone = newOwnPhone;
+    profile.partner2Name = root.querySelector('#pr_partner2Name').value.trim();
+    profile.partner2Phone = root.querySelector('#pr_partner2Phone').value.trim();
     profile.unit = getOpt(root,'prUnit') || 'in';
     profile.lang = getOpt(root,'prLang') || 'en';
     profile.templates = {
