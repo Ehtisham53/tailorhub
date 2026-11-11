@@ -2105,27 +2105,19 @@ const PLAY_PURCHASE_FLAG_KEY = 'tailorhub_play_purchase_here';
    Right after payment, listPurchases() may not show the new purchase yet, so we
    retry a few times with a short wait. Returns the purchaseToken (or null). */
 async function acknowledgePlayPurchase(service, sku){
-  /* TEMP DIAGNOSTIC: notes what happened at each step, shown in a popup after purchase (remove once acknowledge is confirmed working) */
-  window.TH_ackDebug = [];
-  const dbg = (m) => { try{ window.TH_ackDebug.push(m); }catch(_e){} };
-  const errTxt = (er) => { try{ return (er && (er.name || '') + ': ' + (er && er.message || er)); }catch(_e){ return 'unknown'; } };
   const waits = [0, 1500, 3000, 5000, 8000];
   for(let i = 0; i < waits.length; i++){
     if(waits[i]) await new Promise(r => setTimeout(r, waits[i]));
     try{
       const purchases = await service.listPurchases();
-      const ids = (purchases || []).map(p => p.itemId).join(',') || 'none';
-      dbg('try ' + (i + 1) + ': listPurchases -> ' + ids);
       const match = (purchases || []).find(p => p.itemId === sku);
       if(match && match.purchaseToken){
-        try{ await service.acknowledge(match.purchaseToken, 'onetime'); dbg('acknowledge: OK'); }
-        catch(ackErr){ console.warn('acknowledge call failed (maybe already acknowledged):', ackErr); dbg('acknowledge ERROR -> ' + errTxt(ackErr)); }
+        try{ await service.acknowledge(match.purchaseToken, 'onetime'); }
+        catch(ackErr){ console.warn('acknowledge call failed (maybe already acknowledged):', ackErr); }
         return match.purchaseToken;
       }
-      dbg('try ' + (i + 1) + ': ' + sku + ' not in list');
-    }catch(e){ console.warn('listPurchases retry failed:', e); dbg('try ' + (i + 1) + ': listPurchases ERROR -> ' + errTxt(e)); }
+    }catch(e){ console.warn('listPurchases retry failed:', e); }
   }
-  dbg('gave up: no purchase token found');
   return null;
 }
 
@@ -2198,8 +2190,6 @@ async function startPurchase(plan){
       try{ localStorage.setItem(PLAY_PURCHASE_FLAG_KEY, '1'); }catch(_e){}
       applyPurchasedPlan(plan, boughtToken);
       await customAlert(T('up_purchaseSuccess'));
-      /* TEMP DIAGNOSTIC popup (remove after the acknowledge check) */
-      try{ if(window.TH_ackDebug && window.TH_ackDebug.length) await customAlert('DEBUG\n' + window.TH_ackDebug.join('\n')); }catch(_e){}
     }catch(e){
       if(e && e.name !== 'AbortError') await customAlert(T('up_purchaseFail'));
     }
