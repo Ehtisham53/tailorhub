@@ -2104,9 +2104,33 @@ const PLAY_PURCHASE_FLAG_KEY = 'tailorhub_play_purchase_here';
 /* Google refunds any subscription purchase that is NOT acknowledged within 3 days.
    Right after payment, listPurchases() may not show the new purchase yet, so we
    retry a few times with a short wait. Returns the purchaseToken (or null). */
+/* After DGAPI 2.0 the browser can no longer acknowledge. Our small backend (Cloudflare Worker)
+   does it with the Google Play Developer API. Paste the Worker URL here after deploying it. */
+const PLAY_ACK_ENDPOINT = 'https://tailorhub-ack.ahtishamabbas53.workers.dev';
+
+async function ackOnBackend(token, sku){
+  if(!PLAY_ACK_ENDPOINT){ window.__ackDebug = 'ack endpoint not configured'; return false; }
+  if(!token) return false;
+  try{
+    const r = await fetch(PLAY_ACK_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ purchaseToken: token, productId: sku || '' })
+    });
+    let j = {};
+    try{ j = await r.json(); }catch(_e){}
+    if(r.ok && j && j.ok){ window.__ackDebug = 'ok'; return true; }
+    window.__ackDebug = 'backend ' + r.status + ': ' + JSON.stringify(j).slice(0, 240);
+    return false;
+  }catch(e){
+    window.__ackDebug = 'backend unreachable: ' + ((e && e.message) || e);
+    return false;
+  }
+}
+
 async function acknowledgePlayPurchase(service, sku){
   const waits = [0, 1500, 3000, 5000, 8000, 12000];
-  let foundToken = null, lastErr = null;
+  let foundToken = null;
   window.__ackDebug = 'purchase not found in listPurchases()';
   for(let i = 0; i < waits.length; i++){
     if(waits[i]) await new Promise(r => setTimeout(r, waits[i]));
@@ -2115,15 +2139,13 @@ async function acknowledgePlayPurchase(service, sku){
       const match = (purchases || []).find(p => p.itemId === sku);
       if(match && match.purchaseToken){
         foundToken = match.purchaseToken;
-        try{
-          await service.acknowledge(match.purchaseToken, 'onetime');
-          window.__ackDebug = 'ok';
-          return foundToken;
-        }catch(ackErr){
-          lastErr = ackErr;
-          window.__ackDebug = 'acknowledge failed: ' + ((ackErr && (ackErr.name + ' ' + ackErr.message)) || ackErr);
-          console.warn('acknowledge call failed, will retry:', ackErr);
+        if(!PLAY_ACK_ENDPOINT){ window.__ackDebug = 'ack endpoint not configured'; return foundToken; }
+        for(let k = 0; k < 3; k++){
+          if(await ackOnBackend(foundToken, sku)) return foundToken;
+          await new Promise(r => setTimeout(r, 1500));
         }
+        /* backend failed 3 times: keep the token; reconcilePlayPurchases() retries on next app open */
+        return foundToken;
       } else {
         window.__ackDebug = 'purchase not found in listPurchases() (' + (purchases ? purchases.length : 0) + ' items)';
       }
@@ -2149,8 +2171,8 @@ async function reconcilePlayPurchases(){
     /* safety net: acknowledge every active purchase again (harmless if already done) */
     for(const ap of active){
       if(ap.purchaseToken){
-        try{ await service.acknowledge(ap.purchaseToken, 'onetime'); }
-        catch(_ackErr){ /* already acknowledged or temporary error — ignore */ }
+        try{ await ackOnBackend(ap.purchaseToken, ap.itemId); }
+        catch(_ackErr){ /* temporary error — retried on next app open */ }
       }
     }
     if(active.length){
