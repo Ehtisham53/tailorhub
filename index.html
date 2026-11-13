@@ -2229,7 +2229,7 @@ async function startPurchase(plan){
       /* TEMP DEBUG: shows acknowledge result (always for testers, only on failure for everyone else) */
       if(window.__ackDebug !== 'ok' || isPurchaseTester()){ await customAlert('DEBUG acknowledge: ' + window.__ackDebug); }
     }catch(e){
-      if(e && e.name !== 'AbortError') await customAlert(T('up_purchaseFail'));
+      if(e && e.name !== 'AbortError') await customAlert(T('up_purchaseFail') + ' [DEBUG: ' + (e.name || '') + ' ' + (e.message || e) + ']');
     }
   } else {
     /* Not running inside the Play Store TWA (e.g. testing in a regular
