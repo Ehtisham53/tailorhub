@@ -2119,7 +2119,7 @@ async function ackOnBackend(token, sku){
     });
     let j = {};
     try{ j = await r.json(); }catch(_e){}
-    if(r.ok && j && j.ok){ window.__ackDebug = 'ok'; return true; }
+    if(r.ok && j && j.ok){ window.__ackDebug = 'ok ' + JSON.stringify(j).slice(0, 200); return true; }
     window.__ackDebug = 'backend ' + r.status + ': ' + JSON.stringify(j).slice(0, 240);
     return false;
   }catch(e){
@@ -2227,7 +2227,7 @@ async function startPurchase(plan){
       applyPurchasedPlan(plan, boughtToken);
       await customAlert(T('up_purchaseSuccess'));
       /* TEMP DEBUG: shows acknowledge result (always for testers, only on failure for everyone else) */
-      if(window.__ackDebug !== 'ok' || isPurchaseTester()){ await customAlert('DEBUG acknowledge: ' + window.__ackDebug); }
+      await customAlert('DEBUG acknowledge [v3]: ' + window.__ackDebug);
     }catch(e){
       if(e && e.name !== 'AbortError') await customAlert(T('up_purchaseFail') + ' [DEBUG: ' + (e.name || '') + ' ' + (e.message || e) + ']');
     }
