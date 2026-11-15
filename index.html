@@ -2226,10 +2226,8 @@ async function startPurchase(plan){
       try{ localStorage.setItem(PLAY_PURCHASE_FLAG_KEY, '1'); }catch(_e){}
       applyPurchasedPlan(plan, boughtToken);
       await customAlert(T('up_purchaseSuccess'));
-      /* TEMP DEBUG: shows acknowledge result (always for testers, only on failure for everyone else) */
-      await customAlert('DEBUG acknowledge [v3]: ' + window.__ackDebug);
     }catch(e){
-      if(e && e.name !== 'AbortError') await customAlert(T('up_purchaseFail') + ' [DEBUG: ' + (e.name || '') + ' ' + (e.message || e) + ']');
+      if(e && e.name !== 'AbortError') await customAlert(T('up_purchaseFail'));
     }
   } else {
     /* Not running inside the Play Store TWA (e.g. testing in a regular
