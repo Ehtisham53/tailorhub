@@ -1,5 +1,5 @@
-/* TailorHub service worker - offline support. Bump VERSION when you want to force a cache refresh. */
-const VERSION = 'th-v28';
+/* TailorHub service worker - offline support + push notifications. Bump VERSION when you want to force a cache refresh. */
+const VERSION = 'th-v23';
 const CORE = 'th-core-' + VERSION;
 const LIBS = 'th-libs-' + VERSION;
 
@@ -75,4 +75,51 @@ self.addEventListener('fetch', e => {
     return;
   }
   /* Everything else (Firebase/Firestore API calls etc.) goes straight to network, untouched */
+});
+
+/* ============ PUSH NOTIFICATIONS ============
+   The Cloudflare Worker (tailorhub-push) sends data-only messages: { title, body, url? }.
+   This handler shows them as a normal system notification. It also accepts a
+   "notification" payload, so either shape works. Wrapped in try/catch so a bad
+   message can never break the offline/cache code above. */
+self.addEventListener('push', e => {
+  e.waitUntil((async () => {
+    let title = 'TailorHub';
+    let body = '';
+    let url = '';
+    let tag = '';
+    try {
+      const payload = e.data ? e.data.json() : {};
+      const n = payload.notification || {};
+      const d = payload.data || {};
+      title = d.title || n.title || title;
+      body = d.body || n.body || '';
+      url = d.url || '';
+      tag = d.tag || '';
+    } catch (err) {
+      try { body = e.data ? e.data.text() : ''; } catch (e2) {}
+    }
+    if (!body && title === 'TailorHub') return; /* empty message, nothing to show */
+    const opts = {
+      body: body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      data: { url: url }
+    };
+    if (tag) opts.tag = tag;
+    await self.registration.showNotification(title, opts);
+  })());
+});
+
+/* Tapping a notification: focus the app if it is already open, otherwise open it */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || self.registration.scope;
+  e.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if (c.url.startsWith(self.registration.scope) && 'focus' in c) return c.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(target);
+  })());
 });
