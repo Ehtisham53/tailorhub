@@ -1,5 +1,5 @@
 /* TailorHub service worker - offline support + push notifications. Bump VERSION when you want to force a cache refresh. */
-const VERSION = 'th-v23';
+const VERSION = 'th-v26';
 const CORE = 'th-core-' + VERSION;
 const LIBS = 'th-libs-' + VERSION;
 
@@ -102,8 +102,8 @@ self.addEventListener('push', e => {
     if (!body && title === 'TailorHub') return; /* empty message, nothing to show */
     const opts = {
       body: body,
-      icon: 'icon-192.png',
-      badge: 'icon-192.png',
+      icon: 'T-color-192.png',
+      badge: 'badge-96.png',
       data: { url: url }
     };
     if (tag) opts.tag = tag;
