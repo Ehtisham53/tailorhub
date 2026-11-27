@@ -39,6 +39,8 @@ self.addEventListener('fetch', e => {
 
   /* App page: network first (so updates show), cached copy when offline */
   if (req.mode === 'navigate') {
+    /* Customer status page (s.html): always straight from network, never cached as the app page */
+    if (url.pathname.endsWith('/s.html')) return;
     e.respondWith((async () => {
       try {
         const fresh = await fetch(req);
