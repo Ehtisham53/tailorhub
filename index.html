@@ -1000,6 +1000,12 @@
       <button class="btn-edit" style="width:100%;margin-top:10px;" id="pr_btnMonthly">Monthly Record</button>
     </div>
 
+    <div class="card" id="cd_entry">
+      <div class="section-title" id="cd_entryTitle">Shop Digital Card</div>
+      <div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px;line-height:1.45;" id="cd_entryHint">Make a visiting card from your shop details and share it with customers.</div>
+      <button class="btn-edit" style="width:100%;" id="cd_openBtn">Open Card</button>
+    </div>
+
     <div class="card">
       <div class="section-title" id="pr_t_account">Account</div>
       <div class="field-row"><label id="pr_l_phone">Logged in with</label><input type="text" id="pr_phoneNumber" disabled value=""></div>
@@ -1014,6 +1020,29 @@
   </div>
 
   <!-- ============ PROFILE > SETTINGS SUB-SCREEN ============ -->
+  <div class="sub-screen" id="pr_cardScreen" style="display:none;">
+    <div class="form-top">
+      <button class="back-btn" id="cd_backBtn">←</button>
+      <h2 style="margin:0;font-size:17px;" id="cd_title">Shop Digital Card</h2>
+    </div>
+    <div class="form-body">
+      <div class="card">
+        <canvas id="cd_canvas" width="1400" height="800" style="width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block;"></canvas>
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-top:10px;line-height:1.4;" id="cd_hint"></div>
+        <div class="cd-chips" id="cd_designs"></div>
+      </div>
+      <div class="card">
+        <div class="field-row"><label id="cd_l_tagline">Tagline</label><input type="text" id="cd_tagline" maxlength="55"></div>
+        <div class="field-row"><label id="cd_l_address">Address</label><input type="text" id="cd_address" maxlength="70"></div>
+        <div class="cd-wa-row"><span id="cd_l_wa">WhatsApp</span><button type="button" class="cd-sw" id="cd_wa" aria-label="WhatsApp"></button></div>
+      </div>
+    </div>
+    <div class="save-bar">
+      <button class="btn-edit" id="cd_saveBtn" style="background:transparent;border:1.5px solid var(--thread);color:var(--thread);">Save Image</button>
+      <button class="btn-save" id="cd_shareBtn">Share</button>
+    </div>
+  </div>
+
   <div class="sub-screen" id="pr_settingsScreen" style="display:none;">
     <div class="form-top">
       <button class="back-btn" id="st_backBtn">←</button>
@@ -1944,7 +1973,7 @@ function waHref(phone, text){
   }
   return web;
 }
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function loadMeasurements(){ try{ return JSON.parse(localStorage.getItem(MEAS_KEY)) || []; }catch(e){ return []; } }
 function saveMeasurements(list){
   localStorage.setItem(MEAS_KEY, JSON.stringify(list));
@@ -4774,6 +4803,760 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   });
   document.addEventListener('input', sync);
   setInterval(sync, 400);
+})();
+</script>
+<style>
+  .cd-chips{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:12px; }
+  .cd-chip{ position:relative; border:1.5px solid var(--line); background:var(--surface,#fff); border-radius:10px; padding:10px 0 8px; color:var(--ink); font-family:'Inter',sans-serif; font-weight:700; font-size:15px; display:flex; flex-direction:column; align-items:center; gap:3px; min-height:50px; }
+  .cd-chip.on{ border-color:var(--thread); background:var(--thread); color:#fff; }
+  .cd-chip.locked{ color:var(--ink-soft); background:rgba(0,0,0,.04); }
+  .cd-chip-f{ font-size:9.5px; font-weight:600; letter-spacing:.3px; }
+  .cd-wa-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 0 2px; font-size:14px; color:var(--ink); }
+  .cd-sw{ flex-shrink:0; width:46px; height:26px; border-radius:13px; border:none; background:var(--line); position:relative; transition:background .15s; }
+  .cd-sw::after{ content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .15s; }
+  .cd-sw.on{ background:var(--thread); }
+  .cd-sw.on::after{ left:23px; }
+</style>
+<script>
+/* ============ SHOP DIGITAL CARD (Profile tab) ============
+   Builds a landscape visiting-card image (PNG) from the shop details already saved in Profile
+   (shop name, tailor name + phone, Partner 2 if filled) plus optional extras that live ONLY here
+   (tagline, address, WhatsApp icon). Separate module: nothing in the existing app is changed
+   except one entry card in Profile and the language hook below. */
+(function(){
+  var CARD_W = 1400, CARD_H = 800;
+  var SERIF = "'Zilla Slab', Georgia, 'Times New Roman', serif";
+  var SANS = "Inter, Arial, Helvetica, sans-serif";
+  var WA_PATH = "M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.48 1.32 5l-1.4 5.12 5.24-1.37c1.46.8 3.1 1.22 4.75 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m0 1.8c2.19 0 4.25.85 5.79 2.4a8.13 8.13 0 0 1 2.4 5.79c0 4.52-3.68 8.2-8.2 8.2a8.2 8.2 0 0 1-4.18-1.15l-.3-.17-3.11.82.83-3.03-.19-.31a8.13 8.13 0 0 1-1.25-4.35c0-4.53 3.68-8.2 8.21-8.2m4.52 11.7c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.24-.64.8-.78.97-.15.17-.29.19-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.22-1.46-1.37-1.71-.14-.24-.02-.37.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.24-.87.85-.87 2.08 0 1.22.89 2.4 1.01 2.57.13.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28";
+
+  var STR = {
+    en:{ entryTitle:"Shop Digital Card", entryHint:"Make a visiting card from your shop details and share it with customers.", entryBtn:"Open Card",
+      title:"Shop Digital Card", hint:"Name and number come from your Profile. Everything below is optional.",
+      tagline:"Tagline (optional)", taglinePh:"e.g. Gents & Ladies Stitching", address:"Address (optional)", addressPh:"Shop address",
+      wa:"Show WhatsApp icon next to numbers", save:"Save Image", share:"Share",
+      saved:"Card saved", soon:"This design is coming soon.", premium:"This design is available on a higher plan. Upgrade to unlock more designs.",
+      design:"Design", free:"Free", fillProfile:"Please complete your profile first (shop name, tailor name and phone number)." },
+    ur:{ entryTitle:"دکان کا ڈیجیٹل کارڈ", entryHint:"اپنی دکان کی معلومات سے وزٹنگ کارڈ بنائیں اور کسٹمرز کو بھیجیں۔", entryBtn:"کارڈ کھولیں",
+      title:"دکان کا ڈیجیٹل کارڈ", hint:"نام اور نمبر آپ کی پروفائل سے آتے ہیں۔ نیچے سب کچھ اختیاری ہے۔",
+      tagline:"ٹیگ لائن (اختیاری)", taglinePh:"مثلاً جینٹس اور لیڈیز سلائی", address:"پتہ (اختیاری)", addressPh:"دکان کا پتہ",
+      wa:"نمبروں کے ساتھ واٹس ایپ آئیکن دکھائیں", save:"تصویر محفوظ کریں", share:"شیئر کریں",
+      saved:"کارڈ محفوظ ہو گیا", soon:"یہ ڈیزائن جلد آ رہا ہے۔", premium:"یہ ڈیزائن اوپر والے پلان میں دستیاب ہے۔ مزید ڈیزائنز کے لیے اپ گریڈ کریں۔",
+      design:"ڈیزائن", free:"مفت", fillProfile:"پہلے اپنی پروفائل مکمل کریں (شاپ نیم، ٹیلر نیم اور فون نمبر)۔" },
+    ru:{ entryTitle:"Shop ka Digital Card", entryHint:"Apni shop ki maloomat se visiting card banayein aur customers ko bhejein.", entryBtn:"Card Kholein",
+      title:"Shop ka Digital Card", hint:"Naam aur number aap ki Profile se aate hain. Neeche sab kuch optional hai.",
+      tagline:"Tagline (optional)", taglinePh:"jaise Gents & Ladies Stitching", address:"Address (optional)", addressPh:"Shop ka address",
+      wa:"Numbers ke saath WhatsApp icon dikhayein", save:"Image Save Karein", share:"Share Karein",
+      saved:"Card save ho gaya", soon:"Ye design jald aa raha hai.", premium:"Ye design upar wale plan mein milta hai. Aur designs ke liye upgrade karein.",
+      design:"Design", free:"Free", fillProfile:"Pehle apni profile complete karein (shop name, tailor name aur phone number)." }
+  };
+  function CS(k){
+    var l = (typeof currentLang === 'function') ? currentLang() : 'en';
+    return (STR[l] && STR[l][k] !== undefined) ? STR[l][k] : STR.en[k];
+  }
+
+  /* ---------- small drawing helpers ---------- */
+  function fitFont(ctx, text, maxW, size, minSize, weight, family, style){
+    var s = size;
+    while(s > minSize){
+      ctx.font = (style || '') + ' ' + weight + ' ' + s + 'px ' + family;
+      if(ctx.measureText(text).width <= maxW) break;
+      s -= 2;
+    }
+    ctx.font = (style || '') + ' ' + weight + ' ' + s + 'px ' + family;
+    return s;
+  }
+  function wrapLines(ctx, text, maxW, maxLines){
+    var words = String(text).split(/\s+/).filter(Boolean), lines = [], cur = '';
+    for(var i = 0; i < words.length; i++){
+      var test = cur ? cur + ' ' + words[i] : words[i];
+      if(ctx.measureText(test).width <= maxW || !cur){ cur = test; }
+      else { lines.push(cur); cur = words[i]; }
+    }
+    if(cur) lines.push(cur);
+    if(lines.length > maxLines){
+      lines = lines.slice(0, maxLines);
+      var last = lines[maxLines - 1];
+      while(last.length > 1 && ctx.measureText(last + '…').width > maxW) last = last.slice(0, -1);
+      lines[maxLines - 1] = last + '…';
+    }
+    return lines;
+  }
+  function drawWaIcon(ctx, x, y, size, color){
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(size / 24, size / 24);
+    ctx.fillStyle = color || '#25D366';
+    try{ ctx.fill(new Path2D(WA_PATH)); }catch(e){ ctx.beginPath(); ctx.arc(12, 12, 10, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+  }
+  function drawPin(ctx, cx, cy, s, color){
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy - s * 0.15, s * 0.42, Math.PI, 0);
+    ctx.lineTo(cx, cy + s * 0.62);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#F1ECE3';
+    ctx.beginPath(); ctx.arc(cx, cy - s * 0.15, s * 0.16, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  function diamond(ctx, cx, cy, r, color){
+    ctx.save(); ctx.fillStyle = color; ctx.beginPath();
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+
+  /* contact block: one row  -> "Name  •  number" centered
+                    two rows -> names in one column, numbers in another (same look as the PDFs) */
+  function measureContacts(ctx, rows, wa, fontPx){
+    ctx.font = '700 ' + fontPx + 'px ' + SANS;
+    var iconW = wa ? fontPx * 0.95 : 0, iconGap = wa ? 12 : 0;
+    var gap = 56;
+    var out = { rows: rows, fontPx: fontPx, iconW: iconW, iconGap: iconGap, gap: gap };
+    if(rows.length === 1){
+      var r = rows[0];
+      var phoneW = r.p ? (iconW + iconGap + ctx.measureText(r.p).width) : 0;
+      var nameW = r.n ? ctx.measureText(r.n).width : 0;
+      var sep = (r.n && r.p) ? 44 : 0;
+      out.single = true; out.nameW = nameW; out.phoneW = phoneW; out.sep = sep; out.width = nameW + sep + phoneW;
+    } else {
+      var nw = 0, pw = 0;
+      rows.forEach(function(r){
+        nw = Math.max(nw, ctx.measureText(r.n || '').width);
+        pw = Math.max(pw, r.p ? (iconW + iconGap + ctx.measureText(r.p).width) : 0);
+      });
+      out.single = false; out.nameW = nw; out.phoneW = pw; out.width = nw + gap + pw;
+    }
+    return out;
+  }
+  function drawContacts(ctx, m, cx, y, inkColor, sepColor, waOn){
+    var x0 = cx - m.width / 2;
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = '700 ' + m.fontPx + 'px ' + SANS;
+    ctx.fillStyle = inkColor;
+    var rowH = Math.round(m.fontPx * 1.55);
+    if(m.single){
+      var r = m.rows[0], x = x0;
+      ctx.textAlign = 'left';
+      if(r.n){ ctx.fillText(r.n, x, y); x += m.nameW; }
+      if(r.n && r.p){ diamond(ctx, x + m.sep / 2, y - m.fontPx * 0.32, 6, sepColor); x += m.sep; }
+      if(r.p){
+        if(waOn){ drawWaIcon(ctx, x, y - m.fontPx * 0.86, m.iconW, '#25D366'); x += m.iconW + m.iconGap; }
+        ctx.fillStyle = inkColor; ctx.fillText(r.p, x, y);
+      }
+      return rowH;
+    }
+    m.rows.forEach(function(r, i){
+      var yy = y + i * rowH;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = inkColor;
+      ctx.fillText(r.n || '', x0, yy);
+      if(r.p){
+        var px = x0 + m.nameW + m.gap;
+        if(waOn){ drawWaIcon(ctx, px, yy - m.fontPx * 0.86, m.iconW, '#25D366'); px += m.iconW + m.iconGap; }
+        ctx.fillStyle = inkColor; ctx.fillText(r.p, px, yy);
+      }
+    });
+    return rowH * m.rows.length;
+  }
+
+  /* ---------- DESIGN 1 (free): Classic Cream ---------- */
+  function drawClassic(ctx, W, H, d){
+    var INK = '#2B2622', SOFT = '#6B6156', THREAD = '#8B3A3A', BRASS = '#B98A22', BG = '#F1ECE3';
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+    /* faint inner glow so the card does not look flat */
+    var g = ctx.createRadialGradient(W / 2, H / 2, 80, W / 2, H / 2, W * 0.7);
+    g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(222,212,195,.35)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    /* brass frame + maroon stitch line */
+    ctx.strokeStyle = BRASS; ctx.lineWidth = 5; ctx.strokeRect(28, 28, W - 56, H - 56);
+    ctx.strokeStyle = THREAD; ctx.lineWidth = 2.5; ctx.setLineDash([12, 9]); ctx.strokeRect(48, 48, W - 96, H - 96); ctx.setLineDash([]);
+    [[48,48],[W-48,48],[48,H-48],[W-48,H-48]].forEach(function(p){ diamond(ctx, p[0], p[1], 11, BRASS); });
+
+    var cx = W / 2, maxW = W - 280;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+
+    /* measure everything first, then centre the whole block vertically */
+    var shop = (d.shop || '').trim() || 'Shop Name';
+    var shopSize = fitFont(ctx, shop, maxW, 118, 54, '700', SERIF);
+    var shopH = shopSize;
+    var blocks = [];
+    blocks.push({ h: shopH, kind: 'shop' });
+    blocks.push({ h: 58, kind: 'divider' });
+    var tag = (d.tagline || '').trim();
+    var tagSize = 0;
+    if(tag){ tagSize = fitFont(ctx, tag, maxW, 38, 24, '500', SERIF, 'italic'); blocks.push({ h: tagSize + 36, kind: 'tag' }); }
+    var cm = measureContacts(ctx, d.rows.length ? d.rows : [{ n: 'Tailor Name', p: '' }], d.wa, d.rows.length > 1 ? 40 : 44);
+    if(cm.width > maxW){ cm = measureContacts(ctx, d.rows, d.wa, 32); }
+    var rowH = Math.round(cm.fontPx * 1.55);
+    blocks.push({ h: rowH * (cm.single ? 1 : cm.rows.length), kind: 'contacts' });
+    var addr = (d.address || '').trim(), addrLines = [];
+    if(addr){
+      ctx.font = '500 30px ' + SANS;
+      addrLines = wrapLines(ctx, addr, maxW - 80, 2);
+      blocks.push({ h: 34 + addrLines.length * 42, kind: 'address' });
+    }
+    var total = blocks.reduce(function(a, b){ return a + b.h; }, 0);
+    var top = 92, bottom = H - 104;
+    var y = top + Math.max(0, (bottom - top - total) / 2);
+
+    blocks.forEach(function(b){
+      if(b.kind === 'shop'){
+        ctx.fillStyle = INK; ctx.textAlign = 'center';
+        ctx.font = '700 ' + shopSize + 'px ' + SERIF;
+        ctx.fillText(shop, cx, y + shopSize * 0.82);
+      } else if(b.kind === 'divider'){
+        var ly = y + 26;
+        ctx.strokeStyle = BRASS; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(cx - 230, ly); ctx.lineTo(cx - 22, ly); ctx.moveTo(cx + 22, ly); ctx.lineTo(cx + 230, ly); ctx.stroke();
+        diamond(ctx, cx, ly, 10, THREAD);
+      } else if(b.kind === 'tag'){
+        ctx.fillStyle = SOFT; ctx.textAlign = 'center';
+        ctx.font = 'italic 500 ' + tagSize + 'px ' + SERIF;
+        ctx.fillText(tag, cx, y + tagSize + 6);
+      } else if(b.kind === 'contacts'){
+        drawContacts(ctx, cm, cx, y + cm.fontPx + 8, INK, BRASS, d.wa);
+      } else if(b.kind === 'address'){
+        ctx.font = '500 30px ' + SANS; ctx.fillStyle = SOFT; ctx.textAlign = 'center';
+        var widest = 0; addrLines.forEach(function(l){ widest = Math.max(widest, ctx.measureText(l).width); });
+        drawPin(ctx, cx - widest / 2 - 26, y + 38, 26, THREAD);
+        addrLines.forEach(function(l, i){ ctx.fillText(l, cx, y + 48 + i * 42); });
+      }
+      y += b.h;
+    });
+
+    /* TailorHub corner */
+    ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(107,97,86,.85)';
+    ctx.font = 'italic 500 26px ' + SERIF;
+    ctx.fillText('Made with TailorHub', W - 78, H - 72);
+  }
+
+  /* ---------- themed layout (designs 2+): each theme can also change the layout ---------- */
+  function monogram(ctx, cx, cy, r, ch, ring, fill){
+    ctx.save();
+    ctx.strokeStyle = ring; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(cx, cy, r - 18, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = fill; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '700 ' + Math.round(r * 1.15) + 'px ' + SERIF;
+    ctx.fillText(ch, cx, cy + r * 0.06);
+    ctx.restore();
+  }
+  function firstChar(shop){
+    var c = Array.from((shop || '').trim())[0];
+    return c ? c.toUpperCase() : 'T';
+  }
+  function drawThemed(ctx, W, H, d, t){
+    t.paint(ctx, W, H, d);
+    var al = t.align || 'center';
+    var ax = t.ax || 120;
+    var maxW = (al === 'center') ? (W - (t.padX || 280)) : (t.maxW || (W - 560));
+    var cx = (al === 'center') ? W / 2 : ax;
+    ctx.textAlign = al; ctx.textBaseline = 'alphabetic';
+    var shop = (d.shop || '').trim() || 'Shop Name';
+    var inBand = t.shopCY !== undefined;
+    var shopSize = fitFont(ctx, shop, inBand ? (t.shopMaxW || maxW) : maxW, al === 'center' ? 118 : 104, 48, '700', SERIF);
+    var blocks = [];
+    if(!inBand && !t.noShop) blocks.push({ h: shopSize, kind: 'shop' });
+    if(!t.noDivider) blocks.push({ h: 58, kind: 'divider' });
+    var tag = (d.tagline || '').trim(), tagSize = 0;
+    if(tag){ tagSize = fitFont(ctx, tag, maxW, 38, 24, '500', SERIF, 'italic'); blocks.push({ h: tagSize + 36, kind: 'tag' }); }
+    var cm = measureContacts(ctx, d.rows.length ? d.rows : [{ n: 'Tailor Name', p: '' }], d.wa, d.rows.length > 1 ? ((t.cpx && t.cpx[1]) || 40) : ((t.cpx && t.cpx[0]) || 44));
+    if(cm.width > maxW){ cm = measureContacts(ctx, d.rows, d.wa, 32); }
+    var rowH = Math.round(cm.fontPx * 1.55);
+    blocks.push({ h: rowH * (cm.single ? 1 : cm.rows.length), kind: 'contacts' });
+    var addr = (d.address || '').trim(), addrLines = [];
+    if(addr){
+      ctx.font = '500 30px ' + SANS;
+      addrLines = wrapLines(ctx, addr, maxW - 80, 2);
+      blocks.push({ h: 34 + addrLines.length * 42, kind: 'address' });
+    }
+    if(inBand){
+      ctx.fillStyle = t.bandInk || t.ink; ctx.textAlign = al;
+      ctx.font = '700 ' + shopSize + 'px ' + SERIF;
+      ctx.fillText(shop, (al === 'center') ? W / 2 : ax, t.shopCY + shopSize * 0.33);
+    }
+    var total = blocks.reduce(function(a, b){ return a + b.h; }, 0);
+    var top = t.top, bottom = H - t.bottomPad;
+    var y = top + Math.max(0, (bottom - top - total) / 2);
+    blocks.forEach(function(b){
+      if(b.kind === 'shop'){
+        ctx.fillStyle = t.ink; ctx.textAlign = al;
+        ctx.font = '700 ' + shopSize + 'px ' + SERIF;
+        ctx.fillText(shop, cx, y + shopSize * 0.82);
+      } else if(b.kind === 'divider'){
+        var ly = y + 26;
+        ctx.strokeStyle = t.accent; ctx.lineWidth = 3;
+        ctx.beginPath();
+        if(al === 'left'){ ctx.moveTo(ax + 24, ly); ctx.lineTo(ax + 300, ly); }
+        else if(al === 'right'){ ctx.moveTo(ax - 24, ly); ctx.lineTo(ax - 300, ly); }
+        else { ctx.moveTo(cx - 230, ly); ctx.lineTo(cx - 22, ly); ctx.moveTo(cx + 22, ly); ctx.lineTo(cx + 230, ly); }
+        ctx.stroke();
+        diamond(ctx, al === 'left' ? ax + 8 : (al === 'right' ? ax - 8 : cx), ly, 10, t.accent2);
+      } else if(b.kind === 'tag'){
+        ctx.fillStyle = t.soft; ctx.textAlign = al;
+        ctx.font = 'italic 500 ' + tagSize + 'px ' + SERIF;
+        ctx.fillText(tag, cx, y + tagSize + 6);
+      } else if(b.kind === 'contacts'){
+        var ccx = al === 'left' ? ax + cm.width / 2 : (al === 'right' ? ax - cm.width / 2 : cx);
+        drawContacts(ctx, cm, ccx, y + cm.fontPx + 8, t.ink, t.accent, d.wa);
+      } else if(b.kind === 'address'){
+        ctx.font = '500 30px ' + SANS; ctx.fillStyle = t.soft;
+        var widest = 0; addrLines.forEach(function(l){ widest = Math.max(widest, ctx.measureText(l).width); });
+        if(al === 'left'){
+          ctx.textAlign = 'left';
+          drawPin(ctx, ax + 14, y + 38, 26, t.accent2);
+          addrLines.forEach(function(l, i){ ctx.fillText(l, ax + 46, y + 48 + i * 42); });
+        } else if(al === 'right'){
+          ctx.textAlign = 'right';
+          drawPin(ctx, ax - widest - 30, y + 38, 26, t.accent2);
+          addrLines.forEach(function(l, i){ ctx.fillText(l, ax, y + 48 + i * 42); });
+        } else {
+          ctx.textAlign = 'center';
+          drawPin(ctx, cx - widest / 2 - 26, y + 38, 26, t.accent2);
+          addrLines.forEach(function(l, i){ ctx.fillText(l, cx, y + 48 + i * 42); });
+        }
+      }
+      y += b.h;
+    });
+    ctx.textAlign = 'right'; ctx.fillStyle = t.footInk || t.soft;
+    ctx.font = 'italic 500 26px ' + SERIF;
+    ctx.fillText('Made with TailorHub', W - t.footX, H - t.footY);
+  }
+
+  /* DESIGN 1 (free): Teal Bar - shop name runs up a bold teal strip on the left, details on clean white */
+  var THEME_TEALBAR = {
+    ink: '#0B3B38', soft: '#4B7A76', accent: '#0F766E', accent2: '#0F766E',
+    align: 'left', ax: 250, maxW: 1000, noShop: true, noDivider: true, cpx: [54, 46],
+    top: 90, bottomPad: 100, footX: 70, footY: 52,
+    paint: function(ctx, W, H, d){
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#0F766E'; ctx.fillRect(0, 0, 170, H);
+      ctx.fillStyle = '#14B8A6'; ctx.fillRect(170, 0, 12, H);
+      ctx.fillStyle = '#E6F4F2'; ctx.beginPath(); ctx.arc(W - 90, 90, 150, 0, Math.PI * 2); ctx.fill();
+      var shop = (d.shop || '').trim() || 'Shop Name';
+      ctx.save(); ctx.translate(85, H / 2); ctx.rotate(-Math.PI / 2);
+      var sz = fitFont(ctx, shop, H - 150, 78, 38, '700', SERIF);
+      ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '700 ' + sz + 'px ' + SERIF; ctx.fillText(shop, 0, 4);
+      ctx.restore();
+      ctx.strokeStyle = '#0F766E'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(250, 120); ctx.lineTo(560, 120); ctx.stroke();
+    }
+  };
+
+  /* DESIGN 3: Crimson Corners - cream card with bold diagonal crimson corners, centred text */
+  var THEME_CRIMSON = {
+    ink: '#2B1B1B', soft: '#7A5A5A', accent: '#C62828', accent2: '#C62828',
+    padX: 400, top: 90, bottomPad: 100, footX: 70, footY: 52,
+    paint: function(ctx, W, H){
+      ctx.fillStyle = '#FFF9F2'; ctx.fillRect(0, 0, W, H);
+      function tri(x1,y1,x2,y2,x3,y3,c){ ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.closePath(); ctx.fill(); }
+      tri(W, 0, W - 560, 0, W, 330, '#C62828'); tri(W, 0, W - 340, 0, W, 200, '#8E1B1B');
+      tri(0, H, 560, H, 0, H - 330, '#C62828'); tri(0, H, 340, H, 0, H - 200, '#8E1B1B');
+      ctx.strokeStyle = '#2B1B1B'; ctx.lineWidth = 2; ctx.strokeRect(40, 40, W - 80, H - 80);
+    }
+  };
+
+  /* DESIGN 4: Wave - white card, sky-blue waves along the bottom, centred text above */
+  var THEME_WAVE = {
+    ink: '#0D2B4A', soft: '#4F6D8A', accent: '#1E88E5', accent2: '#1E88E5', footInk: '#FFFFFF',
+    padX: 300, top: 70, bottomPad: 225, footX: 70, footY: 36,
+    paint: function(ctx, W, H){
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+      function wave(base, amp, len, phase, color){
+        ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, H);
+        for(var x = 0; x <= W; x += 10){ ctx.lineTo(x, base + Math.sin(x / len * Math.PI * 2 + phase) * amp); }
+        ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+      }
+      wave(H - 190, 26, 420, 0, '#CFE6FB'); wave(H - 150, 24, 360, 1.6, '#7DB9F0'); wave(H - 108, 20, 300, 3.1, '#1E88E5');
+      ctx.strokeStyle = '#1E88E5'; ctx.lineWidth = 3; ctx.strokeRect(24, 24, W - 48, H - 48);
+    }
+  };
+
+  /* DESIGN 2: Midnight - navy pinstripe cloth, text on the LEFT, big monogram badge on the RIGHT */
+  var THEME_MIDNIGHT = {
+    ink: '#F4EBD3', soft: 'rgba(244,235,211,.78)', accent: '#D4AF5A', accent2: '#D4AF5A',
+    align: 'left', ax: 112, maxW: 800,
+    top: 92, bottomPad: 104, footX: 78, footY: 72,
+    paint: function(ctx, W, H, d){
+      var g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, '#0F1B33'); g.addColorStop(1, '#1D2F55');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(255,255,255,.045)'; ctx.lineWidth = 2;
+      for(var x = 10; x < W; x += 16){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      ctx.strokeStyle = '#D4AF5A'; ctx.lineWidth = 5; ctx.strokeRect(28, 28, W - 56, H - 56);
+      ctx.lineWidth = 1.8; ctx.strokeRect(46, 46, W - 92, H - 92);
+      [[46,46],[W-46,46],[46,H-46],[W-46,H-46]].forEach(function(p){ diamond(ctx, p[0], p[1], 11, '#D4AF5A'); });
+      ctx.strokeStyle = 'rgba(212,175,90,.35)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(986, 110); ctx.lineTo(986, H - 110); ctx.stroke();
+      monogram(ctx, 1186, H / 2, 150, firstChar(d.shop), '#D4AF5A', '#D4AF5A');
+    }
+  };
+
+  /* DESIGN 5: Mono - black header band with the shop name, clean white body */
+  var THEME_MONO = {
+    ink: '#111111', soft: '#666666', accent: '#111111', accent2: '#111111', bandInk: '#FFFFFF',
+    shopCY: 118, shopMaxW: 1160,
+    top: 250, bottomPad: 110, footX: 70, footY: 50, padX: 300,
+    paint: function(ctx, W, H){
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#111111'; ctx.fillRect(0, 0, W, 236);
+      ctx.fillStyle = '#E5B800'; ctx.fillRect(0, 236, W, 10);
+      ctx.strokeStyle = '#111111'; ctx.lineWidth = 3; ctx.strokeRect(24, 24, W - 48, H - 48);
+      ctx.strokeStyle = '#E5B800'; ctx.lineWidth = 3; ctx.strokeRect(24, 24, W - 48, 212);
+    }
+  };
+
+  /* DESIGN 6: Violet - slanted purple header, details left-aligned on a soft lavender body */
+  var THEME_VIOLET = {
+    ink: '#2A1750', soft: '#6C5A93', accent: '#7C4DCC', accent2: '#7C4DCC', bandInk: '#FFFFFF',
+    align: 'left', ax: 100, maxW: 900, shopCY: 165, shopMaxW: 900, noDivider: true,
+    top: 350, bottomPad: 96, footX: 70, footY: 52,
+    paint: function(ctx, W, H){
+      ctx.fillStyle = '#F4F0FB'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#D9CCF2'; ctx.beginPath(); ctx.arc(W - 120, H - 80, 210, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#BBA3E8'; ctx.beginPath(); ctx.arc(W - 120, H - 80, 120, 0, Math.PI * 2); ctx.fill();
+      var g = ctx.createLinearGradient(0, 0, W, 0);
+      g.addColorStop(0, '#3B1C6B'); g.addColorStop(1, '#5B2FA3');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(W, 0); ctx.lineTo(W, 230); ctx.lineTo(0, 330); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#B79CF0'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, 346); ctx.lineTo(W, 246); ctx.stroke();
+    }
+  };
+
+
+  /* DESIGN 7: Columns - brown panel with the shop name on the left, contact details stacked on the right */
+  function drawColumns(ctx, W, H, d){
+    var CREAM = '#F6E9D2', GOLD = '#C9A227';
+    ctx.fillStyle = '#F2E8DA'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#4E342E'; ctx.fillRect(0, 0, 780, H);
+    ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 2;
+    for(var k = -H; k < 780; k += 22){ ctx.beginPath(); ctx.moveTo(k, H); ctx.lineTo(k + H, 0); ctx.stroke(); }
+    ctx.fillStyle = GOLD; ctx.fillRect(780, 0, 10, H);
+    ctx.textBaseline = 'alphabetic';
+    /* left: shop name (up to 3 lines) + tagline */
+    var shop = (d.shop || '').trim() || 'Shop Name', lines, s;
+    for(s = 92; s >= 48; s -= 4){
+      ctx.font = '700 ' + s + 'px ' + SERIF;
+      lines = wrapLines(ctx, shop, 610, 10);
+      var okW = lines.every(function(l){ return ctx.measureText(l).width <= 610; });
+      if(lines.length <= 3 && okW) break;
+    }
+    if(lines.length > 3){ lines = wrapLines(ctx, shop, 610, 3); }
+    var lh = Math.round(s * 1.15);
+    var tag = (d.tagline || '').trim(), tagLines = [];
+    if(tag){ ctx.font = 'italic 500 34px ' + SERIF; tagLines = wrapLines(ctx, tag, 610, 2); }
+    var hL = lines.length * lh + 46 + (tagLines.length ? 20 + tagLines.length * 44 : 0);
+    var y = (H - hL) / 2;
+    ctx.fillStyle = CREAM; ctx.textAlign = 'left'; ctx.font = '700 ' + s + 'px ' + SERIF;
+    lines.forEach(function(l, i){ ctx.fillText(l, 90, y + i * lh + s * 0.85); });
+    y += lines.length * lh + 14;
+    ctx.fillStyle = GOLD; ctx.fillRect(90, y, 150, 5);
+    y += 32;
+    if(tagLines.length){
+      ctx.fillStyle = '#D7C3A5'; ctx.font = 'italic 500 34px ' + SERIF;
+      tagLines.forEach(function(l, i){ ctx.fillText(l, 90, y + 30 + i * 44); });
+    }
+    /* right: contacts stacked, address under them */
+    var X = 860, RW = W - 80 - X;
+    var rows = (d.rows && d.rows.length) ? d.rows : [{ n: 'Tailor Name', p: '' }];
+    var addr = (d.address || '').trim(), aLines = [];
+    if(addr){ ctx.font = '500 28px ' + SANS; aLines = wrapLines(ctx, addr, RW - 40, 3); }
+    var hR = rows.length * 118 + (aLines.length ? 40 + aLines.length * 40 : 0);
+    var ry = (H - hR) / 2;
+    rows.forEach(function(r){
+      if(r.n){
+        var ns = fitFont(ctx, r.n, RW, 32, 22, '600', SANS);
+        ctx.fillStyle = '#7A5C4A'; ctx.textAlign = 'left'; ctx.font = '600 ' + ns + 'px ' + SANS;
+        ctx.fillText(r.n, X, ry + 30);
+      }
+      if(r.p){
+        var px = X;
+        if(d.wa){ drawWaIcon(ctx, px, ry + 44, 40, '#25D366'); px += 54; }
+        ctx.fillStyle = '#2B1B16'; ctx.font = '700 42px ' + SANS; ctx.textAlign = 'left';
+        ctx.fillText(r.p, px, ry + 86);
+      }
+      ry += 118;
+    });
+    if(aLines.length){
+      ctx.fillStyle = GOLD; ctx.fillRect(X, ry - 6, 110, 4);
+      drawPin(ctx, X + 14, ry + 38, 26, '#8B3A3A');
+      ctx.fillStyle = '#6D5646'; ctx.font = '500 28px ' + SANS; ctx.textAlign = 'left';
+      aLines.forEach(function(l, i){ ctx.fillText(l, X + 40, ry + 44 + i * 40); });
+    }
+    ctx.textAlign = 'right'; ctx.fillStyle = '#8A7260'; ctx.font = 'italic 500 24px ' + SERIF;
+    ctx.fillText('Made with TailorHub', W - 70, H - 46);
+  }
+
+  function drawTealBar(ctx, W, H, d){ drawThemed(ctx, W, H, d, THEME_TEALBAR); }
+  function drawMidnight(ctx, W, H, d){ drawThemed(ctx, W, H, d, THEME_MIDNIGHT); }
+  function drawCrimson(ctx, W, H, d){ drawThemed(ctx, W, H, d, THEME_CRIMSON); }
+  function drawWave(ctx, W, H, d){ drawThemed(ctx, W, H, d, THEME_WAVE); }
+  function drawMono(ctx, W, H, d){ drawThemed(ctx, W, H, d, THEME_MONO); }
+  function drawViolet(ctx, W, H, d){ drawThemed(ctx, W, H, d, THEME_VIOLET); }
+
+  /* DESIGN 8: Pop - bright yellow, white sticker card with thick black border and hard shadow */
+  var THEME_POP = {
+    ink: '#111111', soft: '#555555', accent: '#FF5C8A', accent2: '#111111',
+    align: 'left', ax: 140, maxW: 900,
+    top: 105, bottomPad: 135, footX: 150, footY: 148,
+    paint: function(ctx, W, H){
+      ctx.fillStyle = '#FFD23F'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(0,0,0,.07)';
+      for(var yy = 20; yy < H; yy += 40){ for(var xx = 20; xx < W; xx += 40){ ctx.beginPath(); ctx.arc(xx, yy, 5, 0, Math.PI * 2); ctx.fill(); } }
+      var x = 70, y = 70, w = W - 190, h = H - 190;
+      ctx.fillStyle = '#111111'; ctx.fillRect(x + 38, y + 38, w, h);
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#111111'; ctx.lineWidth = 7; ctx.strokeRect(x, y, w, h);
+      ctx.save(); ctx.translate(1170, 165); ctx.rotate(0.21);
+      ctx.fillStyle = '#FF5C8A'; ctx.beginPath(); ctx.arc(0, 0, 84, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#111111'; ctx.lineWidth = 6; ctx.stroke();
+      ctx.fillStyle = '#111111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '700 30px ' + SANS; ctx.fillText('TAILOR', 0, 2);
+      ctx.restore();
+    }
+  };
+
+  /* DESIGN 9: Tag - dark slate cloth with a cream garment tag (punched hole + string) */
+  var THEME_TAG = {
+    ink: '#2B2D42', soft: '#6B6E85', accent: '#EF476F', accent2: '#EF476F',
+    padX: 480, top: 160, bottomPad: 128, footX: 235, footY: 98,
+    paint: function(ctx, W, H){
+      ctx.fillStyle = '#2B2D42'; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(255,255,255,.045)'; ctx.lineWidth = 2;
+      for(var gx = 0; gx < W; gx += 40){ ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+      for(var gy = 0; gy < H; gy += 40){ ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+      var L = 190, R = W - 190, T = 70, B = H - 50, c = 64;
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.beginPath(); ctx.moveTo(L + c + 14, T + 14); ctx.lineTo(R - c + 14, T + 14); ctx.lineTo(R + 14, T + c + 14); ctx.lineTo(R + 14, B + 14); ctx.lineTo(L + 14, B + 14); ctx.lineTo(L + 14, T + c + 14); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#FBF4E6';
+      ctx.beginPath(); ctx.moveTo(L + c, T); ctx.lineTo(R - c, T); ctx.lineTo(R, T + c); ctx.lineTo(R, B); ctx.lineTo(L, B); ctx.lineTo(L, T + c); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#EF476F'; ctx.lineWidth = 2.5; ctx.setLineDash([12, 9]);
+      ctx.strokeRect(L + 26, T + 26, R - L - 52, B - T - 52); ctx.setLineDash([]);
+      ctx.strokeStyle = '#D9C9A8'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(W / 2, T + 52); ctx.bezierCurveTo(W / 2 - 60, T - 20, W / 2 - 170, 0, W / 2 - 260, 6); ctx.stroke();
+      ctx.fillStyle = '#2B2D42'; ctx.beginPath(); ctx.arc(W / 2, T + 52, 22, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#EF476F'; ctx.lineWidth = 4; ctx.stroke();
+    }
+  };
+
+  /* DESIGN 10: Poster - orange-red poster, huge shop name, black contact bar at the bottom */
+  function drawPoster(ctx, W, H, d){
+    ctx.fillStyle = '#F4511E'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,.11)'; ctx.beginPath(); ctx.arc(W - 120, 40, 280, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.beginPath(); ctx.arc(W - 120, 40, 170, 0, Math.PI * 2); ctx.fill();
+    var BAR = 220, by = H - BAR;
+    ctx.fillStyle = '#111111'; ctx.fillRect(0, by, W, BAR);
+    ctx.fillStyle = '#FFD23F'; ctx.fillRect(0, by - 10, W, 10);
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    var shop = ((d.shop || '').trim() || 'Shop Name').toUpperCase(), lines, sz, maxW = W - 180;
+    for(sz = 128; sz >= 52; sz -= 4){
+      ctx.font = '700 ' + sz + 'px ' + SERIF;
+      lines = wrapLines(ctx, shop, maxW, 10);
+      var ok = lines.every(function(l){ return ctx.measureText(l).width <= maxW; });
+      if(lines.length <= 3 && ok) break;
+    }
+    if(lines.length > 3){ lines = wrapLines(ctx, shop, maxW, 3); }
+    var lh = Math.round(sz * 1.08), y = 70;
+    ctx.fillStyle = '#FFFFFF'; ctx.font = '700 ' + sz + 'px ' + SERIF;
+    lines.forEach(function(l, i){ ctx.fillText(l, 90, y + i * lh + sz * 0.85); });
+    y += lines.length * lh + 14;
+    var tag = (d.tagline || '').trim();
+    if(tag && y + 54 < by - 20){
+      var ts = fitFont(ctx, tag, maxW, 40, 24, '500', SERIF, 'italic');
+      ctx.fillStyle = '#FFE3D6'; ctx.font = 'italic 500 ' + ts + 'px ' + SERIF; ctx.fillText(tag, 90, y + ts);
+    }
+    var rows = (d.rows && d.rows.length) ? d.rows.slice(0, 2) : [{ n: 'Tailor Name', p: '' }];
+    var colW = (W - 180) / rows.length;
+    rows.forEach(function(r, i){
+      var x = 90 + i * colW;
+      if(r.n){
+        var ns = fitFont(ctx, r.n, colW - 30, 30, 22, '600', SANS);
+        ctx.fillStyle = '#FFB199'; ctx.font = '600 ' + ns + 'px ' + SANS; ctx.fillText(r.n, x, by + 56);
+      }
+      if(r.p){
+        var px = x;
+        if(d.wa){ drawWaIcon(ctx, px, by + 70, 46, '#25D366'); px += 62; }
+        ctx.fillStyle = '#FFFFFF'; ctx.font = '700 52px ' + SANS; ctx.fillText(r.p, px, by + 118);
+      }
+    });
+    var addr = (d.address || '').trim();
+    if(addr){
+      ctx.font = '500 26px ' + SANS; var al = wrapLines(ctx, addr, 880, 1);
+      drawPin(ctx, 104, by + 176, 22, '#FFD23F');
+      ctx.fillStyle = '#BBBBBB'; ctx.fillText(al[0], 130, by + 190);
+    }
+    ctx.textAlign = 'right'; ctx.fillStyle = '#8F8F8F'; ctx.font = 'italic 500 24px ' + SERIF;
+    ctx.fillText('Made with TailorHub', W - 70, by + 190);
+  }
+  function drawPop(ctx, W, H, d){ drawThemed(ctx, W, H, d, THEME_POP); }
+  function drawTag(ctx, W, H, d){ drawThemed(ctx, W, H, d, THEME_TAG); }
+
+  /* 10 slots. Designs 1-7 exist; the rest show up as "coming soon" until they are built. */
+  var DESIGNS = [
+    { name: 'Teal Bar', draw: drawTealBar },
+    { name: 'Midnight', draw: drawMidnight }, { name: 'Crimson', draw: drawCrimson }, { name: 'Wave', draw: drawWave },
+    { name: 'Mono', draw: drawMono }, { name: 'Violet', draw: drawViolet }, { name: 'Columns', draw: drawColumns },
+    { name: 'Pop', draw: drawPop }, { name: 'Tag', draw: drawTag }, { name: 'Poster', draw: drawPoster }
+  ];
+
+  /* How many designs this account has unlocked: Free 1, Monthly 4, 3-Month 7, 6-Month / lifetime 10 */
+  function unlockedCount(){
+    try{
+      if(!isPremium()) return 1;
+      var t = getSubPlanType();
+      if(t === 'monthly') return 4;
+      if(t === 'plan3') return 7;
+      return 10;
+    }catch(e){ return 1; }
+  }
+
+  /* ---------- screen wiring ---------- */
+  var tab = document.getElementById('tab-profile');
+  var mainScreen = document.getElementById('pr_mainScreen');
+  var screen = document.getElementById('pr_cardScreen');
+  var canvas = document.getElementById('cd_canvas');
+  if(!tab || !mainScreen || !screen || !canvas) return;
+  var ctx = canvas.getContext('2d');
+  var elTag = document.getElementById('cd_tagline'), elAddr = document.getElementById('cd_address'), elWa = document.getElementById('cd_wa');
+  var elChips = document.getElementById('cd_designs');
+  var sel = 0;
+  var fontsTried = false;
+
+  function getCardPrefs(){ var p = loadProfile(); return (p && p.card) ? p.card : {}; }
+  function persist(){
+    var p = loadProfile();
+    p.card = { tagline: elTag.value.trim(), address: elAddr.value.trim(), wa: elWa.classList.contains('on'), design: sel };
+    saveProfile(p);
+  }
+  function currentData(){
+    var p = loadProfile();
+    return {
+      shop: p.shopName || '',
+      rows: (typeof shopContactRows === 'function') ? shopContactRows(p) : [],
+      tagline: elTag.value, address: elAddr.value, wa: elWa.classList.contains('on')
+    };
+  }
+  function redraw(){
+    var dsg = DESIGNS[sel] && DESIGNS[sel].draw ? DESIGNS[sel] : DESIGNS[0];
+    try{ ctx.save(); dsg.draw(ctx, CARD_W, CARD_H, currentData()); ctx.restore(); }
+    catch(e){ console.warn('card draw failed:', e); }
+  }
+  function ensureFonts(){
+    if(fontsTried || !document.fonts || !document.fonts.load) return Promise.resolve();
+    fontsTried = true;
+    return Promise.race([
+      Promise.all([ document.fonts.load("700 60px 'Zilla Slab'"), document.fonts.load("italic 500 30px 'Zilla Slab'"), document.fonts.load("700 40px Inter") ]).catch(function(){}),
+      new Promise(function(r){ setTimeout(r, 1500); })
+    ]);
+  }
+  function renderChips(){
+    var open = unlockedCount();
+    elChips.innerHTML = '';
+    DESIGNS.forEach(function(d, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      var locked = i >= open;
+      b.className = 'cd-chip' + (i === sel ? ' on' : '') + (locked ? ' locked' : '');
+      b.innerHTML = '<span class="cd-chip-n">' + (i + 1) + '</span>' +
+        (locked ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+                : (i === 0 ? '<span class="cd-chip-f">' + CS('free') + '</span>' : ''));
+      b.addEventListener('click', async function(){
+        if(!d.draw){ showGlobalToast(CS('soon')); return; }
+        if(locked){ await customAlert(CS('premium')); openUpgradeSheet(); return; }
+        sel = i; persist(); renderChips(); redraw();
+      });
+      elChips.appendChild(b);
+    });
+  }
+  function applyEntryLang(){
+    var set = function(id, v){ var el = document.getElementById(id); if(el) el.textContent = v; };
+    set('cd_entryTitle', CS('entryTitle')); set('cd_entryHint', CS('entryHint')); set('cd_openBtn', CS('entryBtn'));
+    set('cd_title', CS('title')); set('cd_hint', CS('hint')); set('cd_l_tagline', CS('tagline')); set('cd_l_address', CS('address'));
+    set('cd_l_wa', CS('wa')); set('cd_saveBtn', CS('save')); set('cd_shareBtn', CS('share'));
+    elTag.placeholder = CS('taglinePh'); elAddr.placeholder = CS('addressPh');
+  }
+
+  function openCard(){
+    if(typeof isProfileComplete === 'function' && !isProfileComplete()){ customAlert(CS('fillProfile'), T('btn_ok')); return; }
+    var prefs = getCardPrefs();
+    elTag.value = prefs.tagline || '';
+    elAddr.value = prefs.address || '';
+    elWa.classList.toggle('on', !!prefs.wa);
+    sel = (typeof prefs.design === 'number' && prefs.design >= 0 && prefs.design < unlockedCount() && DESIGNS[prefs.design] && DESIGNS[prefs.design].draw) ? prefs.design : 0;
+    applyEntryLang();
+    renderChips();
+    mainScreen.style.display = 'none';
+    screen.style.display = 'block';
+    setNavVisible(false);
+    window.scrollTo(0, 0);
+    ensureFonts().then(redraw);
+    redraw();
+  }
+  function closeCard(){
+    persist();
+    screen.style.display = 'none';
+    mainScreen.style.display = 'block';
+    setNavVisible(true);
+  }
+
+  function toBlob(){ return new Promise(function(res){ canvas.toBlob(res, 'image/png'); }); }
+  function fileName(){
+    var s = (loadProfile().shopName || 'Shop').replace(/[^\w؀-ۿ]+/g, '_').slice(0, 30) || 'Shop';
+    return 'TailorHub_Card_' + s + '.png';
+  }
+  async function saveImage(blob){
+    blob = blob || await toBlob();
+    if(!blob) return;
+    try{
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = fileName();
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+      showGlobalToast(CS('saved'));
+    }catch(err){
+      var u2 = URL.createObjectURL(blob);
+      var opened = window.open(u2, '_blank');
+      if(!opened) await customAlert(T('msg_downloadFail'));
+    }
+  }
+  async function shareImage(){
+    persist();
+    var blob = await toBlob();
+    if(!blob) return;
+    if(navigator.canShare){
+      try{
+        var f = new File([blob], fileName(), { type: 'image/png' });
+        if(navigator.canShare({ files: [f] })){ await navigator.share({ files: [f], title: fileName() }); return; }
+      }catch(err){ if(err && err.name === 'AbortError') return; }
+    }
+    await saveImage(blob);
+  }
+
+  document.getElementById('cd_openBtn').addEventListener('click', openCard);
+  document.getElementById('cd_backBtn').addEventListener('click', closeCard);
+  document.getElementById('cd_saveBtn').addEventListener('click', function(){ persist(); saveImage(); });
+  document.getElementById('cd_shareBtn').addEventListener('click', shareImage);
+  elTag.addEventListener('input', redraw);
+  elAddr.addEventListener('input', redraw);
+  elTag.addEventListener('change', persist);
+  elAddr.addEventListener('change', persist);
+  elWa.addEventListener('click', function(){ elWa.classList.toggle('on'); persist(); redraw(); });
+
+  /* keep the entry card's language in step with the rest of the Profile screen */
+  if(window.TH_profile && typeof window.TH_profile.render === 'function'){
+    var origRender = window.TH_profile.render;
+    window.TH_profile.render = function(){ var r = origRender.apply(this, arguments); try{ applyEntryLang(); }catch(e){} return r; };
+  }
+  if(window.TH_profile){
+    var origReset = window.TH_profile.resetToList, origOpen = window.TH_profile.isSubScreenOpen;
+    window.TH_profile.resetToList = function(){
+      if(screen.style.display === 'block'){ screen.style.display = 'none'; mainScreen.style.display = 'block'; setNavVisible(true); return; }
+      return origReset.apply(this, arguments);
+    };
+    window.TH_profile.isSubScreenOpen = function(){ return screen.style.display === 'block' || origOpen.apply(this, arguments); };
+  }
+  applyEntryLang();
+  window.TH_card = { open: openCard, close: closeCard, isOpen: function(){ return screen.style.display === 'block'; }, _drawFor: function(i, data){ DESIGNS[i].draw(ctx, CARD_W, CARD_H, data); } };
 })();
 </script>
 </body>
