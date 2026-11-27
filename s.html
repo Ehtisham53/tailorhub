@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#8B3A3A">
+<title>Order Status</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+  :root{ --bg:#F1ECE3; --surface:#FFFFFF; --ink:#2B2622; --soft:#6B6156; --thread:#8B3A3A; --brass:#B98A22; --line:#DED4C3; --ok:#4E7A57; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; -webkit-tap-highlight-color:transparent; }
+  h1,h2,.serif{ font-family:'Zilla Slab',serif; }
+  .wrap{ max-width:460px; margin:0 auto; padding:18px 16px 40px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px 16px; margin-bottom:14px; }
+  .head{ text-align:center; padding:6px 0 14px; border-bottom:2px dashed var(--line); margin-bottom:14px; }
+  .head h1{ margin:0 0 6px; font-size:24px; color:var(--ink); }
+  .head .ph{ font-size:13px; color:var(--soft); font-weight:600; line-height:1.6; }
+  .title{ text-align:center; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--soft); font-weight:700; margin:2px 0 4px; }
+  .inv{ text-align:center; font-family:'Zilla Slab',serif; font-size:18px; font-weight:700; color:var(--thread); margin-bottom:10px; }
+  .line{ display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .line:last-child{ border-bottom:none; }
+  .line span:first-child{ color:var(--soft); font-weight:600; }
+  .line span:last-child{ font-weight:600; text-align:right; }
+  .rtl .line span:last-child{ text-align:left; }
+  .steps{ position:relative; padding:4px 0 0; }
+  .step{ display:flex; align-items:center; gap:14px; padding:10px 0; position:relative; }
+  .step:not(:last-child)::after{ content:''; position:absolute; left:15px; top:42px; width:2px; height:22px; background:var(--line); }
+  .rtl .step:not(:last-child)::after{ left:auto; right:15px; }
+  .step.done:not(:last-child)::after{ background:var(--ok); }
+  .dot{ width:32px; height:32px; border-radius:50%; border:2px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--soft); font-size:13px; font-weight:700; }
+  .step.done .dot{ background:var(--ok); border-color:var(--ok); color:#fff; }
+  .step.now .dot{ background:var(--thread); border-color:var(--thread); color:#fff; animation:pulse 1.6s ease-in-out infinite; }
+  .step .lbl{ font-size:15px; color:var(--soft); font-weight:600; }
+  .step.done .lbl{ color:var(--ink); }
+  .step.now .lbl{ color:var(--thread); font-weight:700; font-size:16px; }
+  @keyframes pulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(139,58,58,.45);} 50%{ box-shadow:0 0 0 9px rgba(139,58,58,0);} }
+  .upd{ text-align:center; font-size:11.5px; color:var(--soft); margin-top:6px; }
+  .acts{ display:flex; gap:10px; margin-top:4px; }
+  .acts a{ flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:13px 8px; border-radius:12px; font-weight:700; font-size:14.5px; text-decoration:none; border:1.5px solid; }
+  .acts a.call{ color:var(--thread); border-color:var(--thread); background:transparent; }
+  .acts a.wa{ color:#fff; border-color:#25D366; background:#25D366; }
+  .who{ text-align:center; font-size:12px; color:var(--soft); margin:0 0 8px; font-weight:600; }
+  .msg{ text-align:center; padding:60px 20px; color:var(--soft); font-size:15px; line-height:1.6; }
+  .foot{ text-align:center; font-size:11.5px; color:var(--soft); margin-top:16px; font-family:'Zilla Slab',serif; font-style:italic; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="msg" id="loading">Loading…</div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js" crossorigin="anonymous"></script>
+<script>
+/* Read-only customer status page. Reads ONE small public record: tracks/{id}.
+   Never shows prices or measurements - the record itself does not contain them. */
+var firebaseConfig = {
+  apiKey: "AIzaSyBtFvUmzN92uY8xWjNLoIvAXJ9R3muk87o",
+  authDomain: "tailorhub-io.firebaseapp.com",
+  projectId: "tailorhub-io",
+  storageBucket: "tailorhub-io.firebasestorage.app",
+  messagingSenderId: "268420192565",
+  appId: "1:268420192565:web:a9584bd90de16acb90947c"
+};
+
+var STR = {
+  en:{ title:"Order Status", loading:"Loading…", notfound:"This link is not valid or the order is no longer available. Please contact the shop.",
+       err:"Could not load the status right now. Please check your internet and try again.",
+       cust:"Customer", orderDate:"Order Date", delivery:"Delivery Date", qty:"Suits",
+       s1:"Order Booked", s2:"In Progress (Cutting & Stitching)", s3:"Suit Ready", s4:"Delivered",
+       call:"Call", wa:"WhatsApp", updated:"Last updated", foot:"Powered by TailorHub", hello:"Your order with" },
+  ur:{ title:"آرڈر کی صورتحال", loading:"لوڈ ہو رہا ہے…", notfound:"یہ لنک درست نہیں یا آرڈر اب دستیاب نہیں۔ براہ کرم دکان سے رابطہ کریں۔",
+       err:"ابھی صورتحال لوڈ نہیں ہو سکی۔ اپنا انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔",
+       cust:"کسٹمر", orderDate:"آرڈر کی تاریخ", delivery:"ڈیلیوری کی تاریخ", qty:"سوٹس",
+       s1:"آرڈر بک ہو گیا", s2:"جاری ہے (کٹنگ اور سلائی)", s3:"سوٹ تیار ہے", s4:"ڈیلیور ہو گیا",
+       call:"کال", wa:"واٹس ایپ", updated:"آخری اپ ڈیٹ", foot:"TailorHub کے ذریعے", hello:"آپ کا آرڈر" },
+  ru:{ title:"Order ka Status", loading:"Load ho raha hai…", notfound:"Ye link durust nahi ya order ab available nahi. Barah-e-karam shop se rabta karein.",
+       err:"Abhi status load nahi ho saka. Apna internet check karke dobara koshish karein.",
+       cust:"Customer", orderDate:"Order ki Tareekh", delivery:"Delivery ki Tareekh", qty:"Suits",
+       s1:"Order Book Ho Gaya", s2:"Silai Jari Hai (Cutting & Silai)", s3:"Suit Tayyar Hai", s4:"Deliver Ho Gaya",
+       call:"Call", wa:"WhatsApp", updated:"Aakhri update", foot:"Powered by TailorHub", hello:"Aap ka order" }
+};
+var ORDER = ['Pending','InProgress','Complete','Delivered'];
+
+function el(tag, cls, text){
+  var e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text !== undefined && text !== null) e.textContent = text;
+  return e;
+}
+function fmtDate(v){
+  if(!v) return '-';
+  var d;
+  if(v && typeof v.toDate === 'function') d = v.toDate();
+  else d = new Date(String(v).length <= 10 ? v + 'T00:00:00' : v);
+  if(isNaN(d.getTime())) return String(v);
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function telHref(p){ return 'tel:' + String(p || '').replace(/[^\d+]/g, ''); }
+function waDigits(p){
+  var d = String(p || '').replace(/[^\d]/g, '');
+  if(d.indexOf('0') === 0) d = '92' + d.slice(1);
+  return d;
+}
+function pickLang(l){ return STR[l] ? l : 'en'; }
+
+function showMessage(text){
+  var app = document.getElementById('app');
+  app.innerHTML = '';
+  app.appendChild(el('div', 'msg', text));
+}
+
+function render(d){
+  var lang = pickLang(d.lang), S = STR[lang];
+  document.documentElement.lang = lang === 'ur' ? 'ur' : 'en';
+  document.title = S.title + (d.shopName ? ' - ' + d.shopName : '');
+  var app = document.getElementById('app');
+  app.innerHTML = '';
+  app.className = 'wrap' + (lang === 'ur' ? ' rtl' : '');
+  if(lang === 'ur') app.setAttribute('dir', 'rtl'); else app.removeAttribute('dir');
+
+  /* shop header */
+  var head = el('div', 'head');
+  head.appendChild(el('h1', null, d.shopName || 'TailorHub'));
+  var ph = el('div', 'ph');
+  var l1 = [d.tailorName, d.phone].filter(Boolean).join(' • ');
+  var l2 = [d.partner2Name, d.partner2Phone].filter(Boolean).join(' • ');
+  if(l1) ph.appendChild(el('div', null, l1));
+  if(l2) ph.appendChild(el('div', null, l2));
+  head.appendChild(ph);
+
+  var card = el('div', 'card');
+  card.appendChild(head);
+  card.appendChild(el('div', 'title', S.title));
+  if(d.invoiceNo) card.appendChild(el('div', 'inv', d.invoiceNo));
+
+  function row(label, val){
+    var r = el('div', 'line');
+    r.appendChild(el('span', null, label));
+    r.appendChild(el('span', null, val));
+    card.appendChild(r);
+  }
+  if(d.customerName) row(S.cust, d.customerName);
+  if(d.orderDate) row(S.orderDate, fmtDate(d.orderDate));
+  if(d.deliveryDate) row(S.delivery, fmtDate(d.deliveryDate));
+  app.appendChild(card);
+
+  /* progress */
+  var idx = ORDER.indexOf(d.status);
+  if(idx < 0) idx = 0;
+  var pc = el('div', 'card');
+  var steps = el('div', 'steps');
+  ORDER.forEach(function(k, i){
+    var cls = 'step' + (i < idx ? ' done' : (i === idx ? ' now' : ''));
+    if(k === 'Delivered' && idx === 3) cls = 'step done';
+    var s = el('div', cls);
+    s.appendChild(el('div', 'dot', (i < idx || (k === 'Delivered' && idx === 3)) ? '✓' : String(i + 1)));
+    s.appendChild(el('div', 'lbl', S['s' + (i + 1)]));
+    steps.appendChild(s);
+  });
+  pc.appendChild(steps);
+  if(d.updatedAt) pc.appendChild(el('div', 'upd', S.updated + ': ' + fmtDate(d.updatedAt)));
+  app.appendChild(pc);
+
+  /* contact buttons */
+  if(d.phone){
+    var ac = el('div', 'card');
+    var acts = el('div', 'acts');
+    var a1 = el('a', 'call', '📞 ' + S.call); a1.href = telHref(d.phone);
+    var a2 = el('a', 'wa', S.wa); a2.href = 'https://wa.me/' + waDigits(d.phone); a2.target = '_blank'; a2.rel = 'noopener';
+    acts.appendChild(a1); acts.appendChild(a2);
+    ac.appendChild(acts);
+    app.appendChild(ac);
+  }
+  app.appendChild(el('div', 'foot', S.foot));
+}
+
+(function init(){
+  var q = new URLSearchParams(location.search);
+  var lang = pickLang(q.get('lang'));
+
+  /* DEMO MODE (design preview, no database): s.html?demo=1&st=InProgress&lang=ru */
+  if(q.get('demo') === '1'){
+    render({
+      lang: lang, shopName:'Al-Madina Tailors', tailorName:'Ahmed', phone:'03001234567',
+      customerName:'Ali', invoiceNo:'INV-0007', orderDate:'2026-11-26', deliveryDate:'2026-12-03',
+      status: q.get('st') || 'InProgress', updatedAt: new Date()
+    });
+    return;
+  }
+
+  var id = (q.get('id') || '').trim();
+  if(!/^[A-Za-z0-9_-]{12,64}$/.test(id)){ showMessage(STR[lang].notfound); return; }
+
+  try{
+    firebase.initializeApp(firebaseConfig);
+    firebase.firestore().collection('tracks').doc(id).get().then(function(snap){
+      if(!snap.exists){ showMessage(STR[lang].notfound); return; }
+      render(snap.data() || {});
+    }).catch(function(e){
+      console.warn(e);
+      var denied = e && e.code === 'permission-denied';
+      showMessage(denied ? STR[lang].notfound : STR[lang].err);
+    });
+  }catch(e){
+    console.warn(e);
+    showMessage(STR[lang].err);
+  }
+})();
+</script>
+</body>
+</html>
