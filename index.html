@@ -851,6 +851,7 @@
 
       <div class="section-title" data-i18n="sec_whatsapp">WhatsApp</div>
       <button class="wa-btn" id="or_waBtn" data-i18n="btn_sendWa">Send WhatsApp Message</button>
+      <button class="wa-btn" id="or_trackBtn" style="display:none;margin-top:8px;" data-i18n="btn_sendTrack">Send Status Link</button>
     </div>
     <div class="save-bar" style="flex-wrap:wrap;">
       <button class="btn-pdf" id="or_formSavePdfBtn" style="display:none;flex:1 1 calc(50% - 5px);" data-i18n="btn_savePdf">Save PDF</button>
@@ -2449,7 +2450,7 @@ const APP_STR = {
     empty_orderTitle:"No orders yet", empty_orderSub:"Tap the + button to create an order for a saved customer.",
     meta_qty:"Qty", meta_saved:"Saved", meta_overdue:"Overdue", meta_delivery:"Delivery",
     wa_orderReady:"Order Ready",
-    msg_selectCustomerFirst:"Select a customer first.", msg_noPhoneSaved:"This customer has no phone number saved. Add one from Customer or Measurement first.",
+    btn_sendTrack:"Send Status Link", msg_trackFail:"Could not create the link. Check your internet and try again.", wa_trackIntro:"Track your order status here", msg_selectCustomerFirst:"Select a customer first.", msg_noPhoneSaved:"This customer has no phone number saved. Add one from Customer or Measurement first.",
     msg_confirmDeleteMeasurement:"Are you sure you want to delete this measurement? This cannot be undone.",
     msg_confirmDeleteOrder:"Are you sure you want to delete this order? This cannot be undone.",
     msg_confirmLogoutDevice:"Are you sure you want to log out this device?",
@@ -2533,7 +2534,7 @@ const APP_STR = {
     empty_orderTitle:"ابھی تک کوئی آرڈر نہیں", empty_orderSub:"محفوظ کسٹمر کے لیے آرڈر بنانے کے لیے + بٹن دبائیں۔",
     meta_qty:"مقدار", meta_saved:"محفوظ شدہ", meta_overdue:"تاخیر شدہ", meta_delivery:"ڈیلیوری",
     wa_orderReady:"آرڈر تیار ہے",
-    msg_selectCustomerFirst:"پہلے کسٹمر منتخب کریں۔", msg_noPhoneSaved:"اس کسٹمر کا فون نمبر محفوظ نہیں ہے۔ پہلے کسٹمر یا پیمائش ٹیب سے شامل کریں۔",
+    btn_sendTrack:"اسٹیٹس لنک بھیجیں", msg_trackFail:"لنک نہیں بن سکا۔ انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔", wa_trackIntro:"اپنے آرڈر کا اسٹیٹس یہاں دیکھیں", msg_selectCustomerFirst:"پہلے کسٹمر منتخب کریں۔", msg_noPhoneSaved:"اس کسٹمر کا فون نمبر محفوظ نہیں ہے۔ پہلے کسٹمر یا پیمائش ٹیب سے شامل کریں۔",
     msg_confirmDeleteMeasurement:"کیا آپ واقعی یہ پیمائش حذف کرنا چاہتے ہیں؟ یہ واپس نہیں ہو سکتا۔",
     msg_confirmDeleteOrder:"کیا آپ واقعی یہ آرڈر حذف کرنا چاہتے ہیں؟ یہ واپس نہیں ہو سکتا۔",
     msg_confirmLogoutDevice:"کیا آپ واقعی اس ڈیوائس کو لاگ آؤٹ کرنا چاہتے ہیں؟",
@@ -2617,7 +2618,7 @@ const APP_STR = {
     empty_orderTitle:"Abhi tak koi order nahi", empty_orderSub:"Saved customer ke liye order banane ke liye + button dabayein.",
     meta_qty:"Qty", meta_saved:"Saved", meta_overdue:"Overdue", meta_delivery:"Delivery",
     wa_orderReady:"Order Tayyar Hai",
-    msg_selectCustomerFirst:"Pehle customer select karein.", msg_noPhoneSaved:"Is customer ka phone number save nahi hai. Pehle Customer ya Measurement se add karein.",
+    btn_sendTrack:"Status Link Bhejein", msg_trackFail:"Link nahi ban saka. Internet check karein aur dobara koshish karein.", wa_trackIntro:"Apne order ka status yahan dekhein", msg_selectCustomerFirst:"Pehle customer select karein.", msg_noPhoneSaved:"Is customer ka phone number save nahi hai. Pehle Customer ya Measurement se add karein.",
     msg_confirmDeleteMeasurement:"Kya aap waqai ye measurement delete karna chahte hain? Ye wapas nahi ho sakta.",
     msg_confirmDeleteOrder:"Kya aap waqai ye order delete karna chahte hain? Ye wapas nahi ho sakta.",
     msg_confirmLogoutDevice:"Kya aap waqai is device ko log out karna chahte hain?",
@@ -3681,6 +3682,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
   const btnBalanceReceived = document.getElementById('or_btnBalanceReceived');
   const balanceReceivedNote = document.getElementById('or_balanceReceivedNote');
   const waBtn = document.getElementById('or_waBtn');
+  const trackBtn = document.getElementById('or_trackBtn');
   const invoiceScreen = document.getElementById('or_invoiceScreen');
   const invoiceBody = document.getElementById('or_invoiceBody');
   const invoiceBackBtn = document.getElementById('or_invoiceBackBtn');
@@ -4029,6 +4031,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       deleteBtn.style.display = 'block';
       formSavePdfBtn.style.display = 'block';
       formSharePdfBtn.style.display = 'block';
+      trackBtn.style.display = 'block';
       selectedCustomerId = o.customerId;
       if(cust){
         customerPickLabel.textContent = `${cust.name} (Serial No. ${pad(cust.sr)})`;
@@ -4058,6 +4061,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       deleteBtn.style.display = 'none';
       formSavePdfBtn.style.display = 'none';
       formSharePdfBtn.style.display = 'none';
+      trackBtn.style.display = 'none';
       selectOpt(root, 'orStatus', 'Pending');
       root.querySelector('#or_orderDate').value = todayStr();
       updateBalance();
@@ -4231,6 +4235,66 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
   formSharePdfBtn.addEventListener('click', ()=>{
     const o = orders.find(x => x.id === editingId);
     if(o) shareOrderInvoicePDF(o, findCustomer(o.customerId));
+  });
+
+  /* ===== Customer status link: creates/updates a tiny public record tracks/{id} (no money, no measurements) ===== */
+  const TRACK_BASE = 'https://ehtisham53.github.io/tailorhub/s.html?id=';
+  function makeTrackId(){
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    const arr = new Uint8Array(24);
+    (window.crypto || window.msCrypto).getRandomValues(arr);
+    let out = '';
+    for(let i = 0; i < arr.length; i++) out += abc[arr[i] % abc.length];
+    return out;
+  }
+  function buildTrackRecord(o, cust, uid){
+    const p = loadProfile();
+    return {
+      ownerUid: uid,
+      lang: p.lang || 'en',
+      shopName: p.shopName || '',
+      tailorName: p.tailorName || '',
+      phone: p.ownPhone || '',
+      partner2Name: p.partner2Name || '',
+      partner2Phone: p.partner2Phone || '',
+      customerName: cust ? (cust.name || '') : '',
+      invoiceNo: fmtInvoiceNo(o.invoiceNo),
+      orderDate: o.orderDate || '',
+      deliveryDate: o.deliveryDate || '',
+      status: o.status || 'Pending',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+  }
+  trackBtn.addEventListener('click', async ()=>{
+    const o = orders.find(x => x.id === editingId);
+    if(!o) return;
+    const user = auth.currentUser;
+    if(!user){ await customAlert(T('msg_trackFail')); return; }
+    const cust = findCustomer(o.customerId);
+    const tid = o.trackId || makeTrackId();
+    trackBtn.disabled = true;
+    try{
+      await Promise.race([
+        db.collection('tracks').doc(tid).set(buildTrackRecord(o, cust, user.uid)),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000))
+      ]);
+    }catch(e){
+      console.warn('track link failed:', e);
+      trackBtn.disabled = false;
+      await customAlert(T('msg_trackFail'));
+      return;
+    }
+    trackBtn.disabled = false;
+    if(!o.trackId){ o.trackId = tid; saveOrders(orders); }
+    const p = loadProfile();
+    const message = `${p.shopName || ''}\n\n${T('wa_trackIntro')} (${fmtInvoiceNo(o.invoiceNo)}):\n${TRACK_BASE}${tid}`;
+    if(cust && cust.phone){
+      const href = waHref(cust.phone, message);
+      if(href.startsWith('intent:')) window.location.href = href;
+      else window.open(href, '_blank');
+    } else {
+      window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank');
+    }
   });
 
   window.TH_order = {
