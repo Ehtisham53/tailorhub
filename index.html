@@ -4157,6 +4157,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       setOrderLifetimeCount(getOrderLifetimeCount() + 1);
     }
     saveOrders(orders);
+    syncTrackRecord(savedOrder);
     if(isNewOrder){
       openInvoice(savedOrder.id);
     } else {
@@ -4170,6 +4171,7 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
     const target = orders.find(o => o.id === editingId);
     orders = orders.filter(o => o.id !== editingId);
     saveOrders(orders);
+    removeTrackRecord(target);
     if(target && target.createdAt && (Date.now() - target.createdAt) < GRACE_MS){
       setOrderLifetimeCount(Math.max(0, getOrderLifetimeCount() - 1));
     }
@@ -4264,6 +4266,24 @@ function numVal(root, id){ const el = root.querySelector('#'+id); const v = el.v
       status: o.status || 'Pending',
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
+  }
+  /* Keeps the customer's status page in step with the order. Only runs for orders that already have a link
+     (trackId); fire-and-forget, so a bad network never blocks or breaks Save Order / Delete. */
+  function syncTrackRecord(o){
+    try{
+      if(!o || !o.trackId) return;
+      const user = auth.currentUser;
+      if(!user) return;
+      db.collection('tracks').doc(o.trackId).set(buildTrackRecord(o, findCustomer(o.customerId), user.uid))
+        .catch(e => console.warn('track sync skipped:', e));
+    }catch(e){ console.warn('track sync skipped:', e); }
+  }
+  function removeTrackRecord(o){
+    try{
+      if(!o || !o.trackId) return;
+      db.collection('tracks').doc(o.trackId).delete()
+        .catch(e => console.warn('track delete skipped:', e));
+    }catch(e){ console.warn('track delete skipped:', e); }
   }
   trackBtn.addEventListener('click', async ()=>{
     const o = orders.find(x => x.id === editingId);
